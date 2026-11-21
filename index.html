@@ -1,0 +1,1296 @@
+<title>Dự báo nhu cầu từ dữ liệu ERP</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Bố cục: sách học thuật một cột chữ ~70 ký tự, mục lục dính bên trái trên màn rộng, hình đặt trên "giấy" trắng. */
+:root {
+  --paper: #f6f7f5; --panel: #ffffff; --ink: #1d2733; --muted: #5d6a78; --line: #d5dbe0;
+  --accent: #0f6e8c; --accent-soft: #e2eff3; --amber: #b8631a; --amber-soft: #f6ebdf; --warn: #b4323b; --warn-soft: #f7e4e5;
+  --code-bg: #f0f3f5; --code-ink: #1d2733; --c-kw: #8a3ea8; --c-str: #2f7a3b; --c-com: #7b8794; --c-num: #b8631a; --c-fn: #0f6e8c;
+  --serif: "Source Serif 4", "Noto Serif", Georgia, serif;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #13181d; --panel: #1b2229; --ink: #e3e8ec; --muted: #9aa7b3; --line: #2f3a44;
+  --accent: #5fb4d0; --accent-soft: #17323d; --amber: #e3a061; --amber-soft: #36281b; --warn: #e5747b; --warn-soft: #3a1f22;
+  --code-bg: #10151a; --code-ink: #dbe2e8; --c-kw: #d29be6; --c-str: #8fcf8f; --c-com: #7d8a96; --c-num: #e3a061; --c-fn: #6cc3df;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: #13181d; --panel: #1b2229; --ink: #e3e8ec; --muted: #9aa7b3; --line: #2f3a44;
+  --accent: #5fb4d0; --accent-soft: #17323d; --amber: #e3a061; --amber-soft: #36281b; --warn: #e5747b; --warn-soft: #3a1f22;
+  --code-bg: #10151a; --code-ink: #dbe2e8; --c-kw: #d29be6; --c-str: #8fcf8f; --c-com: #7d8a96; --c-num: #e3a061; --c-fn: #6cc3df;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 400 17px/1.65 var(--serif); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+@media (min-width: 1100px) { .layout { grid-template-columns: 250px minmax(0, 1fr); gap: 48px; } }
+main { min-width: 0; max-width: 46rem; padding-block: 24px 96px; }
+
+/* Mục lục */
+nav.toc { font: 500 13.5px/1.45 var(--sans); padding-block: 20px; }
+nav.toc details { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 10px 14px; }
+nav.toc summary { cursor: pointer; font-weight: 600; }
+nav.toc ol { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
+nav.toc li.part { margin-top: 10px; color: var(--muted); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; }
+nav.toc a { color: var(--ink); text-decoration: none; display: block; padding: 3px 6px; border-radius: 4px; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--accent-soft); outline: none; }
+nav.toc a span { color: var(--muted); font-variant-numeric: tabular-nums; display: inline-block; min-width: 2.2em; }
+@media (min-width: 1100px) {
+  nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; }
+  nav.toc details { border: 0; background: none; padding: 0; }
+  nav.toc summary { list-style: none; pointer-events: none; color: var(--muted); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; }
+  nav.toc summary::-webkit-details-marker { display: none; }
+}
+
+/* Bìa */
+header.cover { padding-block: 40px 28px; border-bottom: 2px solid var(--ink); margin-bottom: 8px; }
+.cover .series { font: 600 12px/1.4 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.cover h1 { font: 700 clamp(2rem, 5vw, 3.1rem)/1.12 var(--sans); margin: 14px 0 10px; text-wrap: balance; letter-spacing: -.01em; }
+.cover .sub { font-size: 1.2rem; color: var(--muted); font-style: italic; margin: 0 0 22px; text-wrap: balance; }
+.cover dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; font: 400 14px/1.5 var(--sans); margin: 0; }
+.cover dt { color: var(--muted); }
+.cover dd { margin: 0; }
+
+/* Tiêu đề */
+h2, h3, h4 { font-family: var(--sans); text-wrap: balance; line-height: 1.25; }
+.part-title { font: 600 12px/1.4 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); margin: 72px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+section.chapter { scroll-margin-top: 16px; }
+.chapter > h2 { font-size: 1.9rem; margin: 40px 0 6px; }
+.chapter > h2 .num { display: block; font: 600 12.5px/1.4 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.chapter > .lede { color: var(--muted); font-style: italic; margin-top: 0; }
+h3 { font-size: 1.28rem; margin: 36px 0 8px; }
+h4 { font-size: 1.05rem; margin: 26px 0 6px; }
+p { margin: 0 0 14px; }
+a { color: var(--accent); }
+strong { font-weight: 600; }
+code { font: 400 .86em var(--mono); background: var(--code-bg); padding: .08em .3em; border-radius: 3px; overflow-wrap: anywhere; }
+ul, ol { padding-left: 1.4em; margin: 0 0 14px; }
+li { margin: 3px 0; }
+
+/* Hộp học thuật */
+.box { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+.box > :last-child { margin-bottom: 0; }
+.box .label { display: block; font: 600 11.5px/1.4 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+.box.verify { border-color: var(--amber); background: var(--amber-soft); }
+.box.verify .label { color: var(--amber); }
+.box.pitfall { border-color: var(--warn); background: var(--warn-soft); }
+.box.pitfall .label { color: var(--warn); }
+.box.exercise { border-left-style: dashed; background: transparent; border-color: var(--muted); }
+.box.exercise .label { color: var(--muted); }
+
+/* Công thức */
+.eq { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 16px 0; padding: 12px 16px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
+.eq .m { font: italic 400 1.05rem/1.6 var(--serif); white-space: nowrap; }
+.eq .n { color: var(--muted); font: 400 13px var(--sans); }
+
+/* Hình */
+figure { margin: 22px 0; }
+figure.img { background: #ffffff; border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+figure.img img { display: block; width: 100%; height: auto; }
+figure figcaption, .svgfig figcaption { font: 400 13.5px/1.5 var(--sans); color: var(--muted); margin-top: 8px; }
+figure.img figcaption { color: #5d6a78; }
+figcaption b { color: var(--ink); font-weight: 600; }
+figure.img figcaption b { color: #1d2733; }
+.svgfig { margin: 22px 0; }
+.svgfig .wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+.svgfig svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.d-box { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; }
+.d-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.d-amb { fill: var(--amber-soft); stroke: var(--amber); stroke-width: 1.2; }
+.d-warn { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.2; }
+.d-t { fill: var(--ink); font: 600 13px var(--sans); }
+.d-s { fill: var(--muted); font: 400 10.5px var(--mono); }
+.d-l { fill: var(--muted); font: 400 12px var(--sans); }
+.d-line { stroke: var(--muted); stroke-width: 1.3; fill: none; }
+.d-head { fill: var(--muted); }
+.d-axis { stroke: var(--ink); stroke-width: 1.2; }
+.d-shade { fill: var(--accent-soft); }
+
+/* Code */
+figure.code { margin: 18px 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--code-bg); }
+figure.code figcaption { margin: 0; padding: 6px 12px; border-bottom: 1px solid var(--line); font: 400 12px var(--mono); color: var(--muted); background: var(--panel); }
+pre { margin: 0; overflow-x: auto; padding: 12px 14px; }
+pre code { background: none; padding: 0; font: 400 13px/1.55 var(--mono); color: var(--code-ink); overflow-wrap: normal; white-space: pre; }
+pre.shell { background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; margin: 16px 0; }
+.hljs-keyword, .hljs-built_in, .hljs-literal { color: var(--c-kw); }
+.hljs-string, .hljs-doctag { color: var(--c-str); }
+.hljs-comment, .hljs-quote { color: var(--c-com); font-style: italic; }
+.hljs-number { color: var(--c-num); }
+.hljs-title, .hljs-title.function_, .hljs-title.class_ { color: var(--c-fn); font-weight: 600; }
+.hljs-params { color: var(--code-ink); }
+.hljs-meta { color: var(--c-num); }
+
+/* Bảng */
+.tbl { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font: 400 14px/1.45 var(--sans); }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; background: var(--accent-soft); }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.hl td { background: var(--amber-soft); font-weight: 600; }
+.tbl-cap { font: 400 13.5px/1.5 var(--sans); color: var(--muted); margin: -8px 0 16px; }
+
+.refs li { font-size: 15px; margin: 6px 0; }
+.foot { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line); font: 400 13px/1.6 var(--sans); color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="layout">
+<nav class="toc" aria-label="Mục lục">
+<details open>
+<summary>Mục lục</summary>
+<ol>
+<li><a href="#preface"><span></span>Lời nói đầu</a></li>
+<li class="part">Phần I · Nền tảng</li>
+<li><a href="#ch1"><span>1</span>Từ bài tập lớp đến dự án</a></li>
+<li><a href="#ch2"><span>2</span>Quy trình có cổng kiểm soát</a></li>
+<li><a href="#ch3"><span>3</span>Bản đồ pipeline</a></li>
+<li class="part">Phần II · Dữ liệu</li>
+<li><a href="#ch4"><span>4</span>Case study và dữ liệu ERP</a></li>
+<li><a href="#ch5"><span>5</span>Seed dữ liệu giả lập</a></li>
+<li><a href="#ch6"><span>6</span>Hợp đồng dữ liệu và làm sạch</a></li>
+<li><a href="#ch7"><span>7</span>Khai phá dữ liệu</a></li>
+<li class="part">Phần III · Mô hình</li>
+<li><a href="#ch8"><span>8</span>Mốc cắt và đặc trưng as-of</a></li>
+<li><a href="#ch9"><span>9</span>Baseline và mô hình toàn cục</a></li>
+<li><a href="#ch10"><span>10</span>Quantile và conformal</a></li>
+<li class="part">Phần IV · Đánh giá và quyết định</li>
+<li><a href="#ch11"><span>11</span>Deep learning và Chronos-2</a></li>
+<li><a href="#ch12"><span>12</span>Backtest, chỉ số, quality gate</a></li>
+<li><a href="#ch13"><span>13</span>Mô phỏng tồn kho</a></li>
+<li><a href="#ch14"><span>14</span>Test một lần</a></li>
+<li><a href="#ch15"><span>15</span>Triển khai và giám sát</a></li>
+<li class="part">Phụ lục</li>
+<li><a href="#appA"><span>A</span>Lệnh chạy và bài tập</a></li>
+<li><a href="#appB"><span>B</span>Thuật ngữ Việt – Anh</a></li>
+<li><a href="#refs"><span>C</span>Tài liệu tham khảo</a></li>
+</ol>
+</details>
+</nav>
+
+<main>
+<header class="cover">
+<div class="series">Giáo trình thực hành · Data Mining &amp; AI nâng cao</div>
+<h1>Dự báo nhu cầu từ dữ liệu ERP</h1>
+<p class="sub">Từ khai phá dữ liệu đến chính sách tồn kho: một pipeline học máy có kiểm chứng, xây dựng qua case study nhà phân phối thiết bị điện</p>
+<dl>
+<dt>Đối tượng</dt><dd>Học viên cao học, nhóm đồ án DM–AI; người làm dự án ML cho doanh nghiệp</dd>
+<dt>Yêu cầu</dt><dd>Python cơ bản, pandas, scikit-learn ở mức Chương 4–7 của môn học</dd>
+<dt>Mã nguồn</dt><dd><code>DataMining/Work/erp-demand-lab/</code>, chạy lại toàn bộ bằng một lệnh</dd>
+<dt>Phiên bản</dt><dd>16/11/2026 · mọi con số lấy từ lần chạy thật với <code>SEED = 20261116</code></dd>
+</dl>
+</header>
+
+<section class="chapter" id="preface">
+<h2>Lời nói đầu</h2>
+<p>Các bài tập trong môn Khai phá dữ liệu thường bắt đầu bằng một tệp CSV sạch và kết thúc bằng một con số accuracy. Dự án thật bắt đầu sớm hơn và kết thúc muộn hơn. Nó bắt đầu từ sáu bảng ERP có dòng trùng, đơn hủy, mã hàng đổi tên và những tuần hết hàng che mất nhu cầu. Nó kết thúc khi người mua hàng đặt một con số cụ thể vào phiếu mua sáng thứ Hai, và giám đốc hỏi việc đó tiết kiệm được bao nhiêu tiền.</p>
+<p>Cuốn sách này đi hết quãng đường đó trên một case study duy nhất: dự báo nhu cầu theo tuần cho khoảng 400 mã hàng của một nhà phân phối thiết bị điện, rồi đổi dự báo thành chính sách đặt hàng. Mỗi chương có phần lý thuyết, hình minh họa, đoạn code lấy nguyên văn từ pipeline, và hộp <em>Kiểm chứng</em> ghi con số đã đo được. Vì dữ liệu ERP thật chưa được phép đưa ra ngoài, pipeline chạy trên một bộ dữ liệu giả lập có cùng cấu trúc và cùng các "bẫy", kèm đáp án để ta đo chính mình.</p>
+<p>Sách cũng ghi lại các lỗi mà người viết đã mắc khi xây pipeline, cách phát hiện và cách sửa. Đó không phải phần phụ. Phần lớn giá trị của một quy trình chuyên nghiệp nằm ở việc bắt lỗi trước khi lỗi trở thành kết luận.</p>
+<div class="box"><span class="label">Cách đọc</span>
+<p>Phần I dành cho mọi người. Phần II cho vai trò dữ liệu (VT1, VT2, VT3), Phần III cho vai trò mô hình (VT4, VT5), Phần IV cho vai trò đánh giá và sản phẩm (VT6). Hộp <strong>Kiểm chứng</strong> chứa đáp số để so với lần chạy của bạn; hộp <strong>Cạm bẫy</strong> nêu lỗi thường gặp; hộp <strong>Bài tập</strong> là việc tự làm.</p></div>
+</section>
+
+<div class="part-title">Phần I · Nền tảng</div>
+
+<section class="chapter" id="ch1">
+<h2><span class="num">Chương 1</span>Từ bài tập lớp đến dự án doanh nghiệp</h2>
+<p class="lede">Môn học cho ta CRISP-DM và bộ thuật toán. Chương này chỉ ra chỗ nào phải dùng khác đi khi dữ liệu là chuỗi thời gian từ ERP.</p>
+
+<p>Học liệu của môn gồm bảy bài giảng tiếng Anh bám giáo trình của Tan, Steinbach và Kumar (dữ liệu và tiền xử lý, cây quyết định và đánh giá, các bộ phân loại khác, phân cụm, tập phổ biến, phân tích liên kết), cùng bốn chương tiếng Việt theo CRISP-DM: chuẩn bị dữ liệu, mô hình hóa, đánh giá, triển khai. Ví dụ thực hành là Customer Churn, House Prices, Iris, Titanic, Mall Customers: dữ liệu dạng bảng, các dòng độc lập với nhau.</p>
+<p>Đồ án là bài toán khác về bản chất: <strong>dự báo nhiều chuỗi thời gian, nhu cầu lẻ tẻ, đầu ra là phân phối xác suất, và kết quả cuối là một quyết định tồn kho</strong>. Bảng dưới đây tóm tắt những thói quen phải đổi.</p>
+<div class="tbl"><table>
+<tr><th>Thói quen trong lớp</th><th>Vì sao sai với dữ liệu ERP</th><th>Thay bằng</th><th>Chương</th></tr>
+<tr><td><code>train_test_split</code> ngẫu nhiên</td><td>Tuần 2025 lọt vào train, tuần 2024 nằm ở test: mô hình nhìn thấy tương lai</td><td>Backtest cuốn mốc theo thời gian</td><td>12</td></tr>
+<tr><td>k-fold cross-validation</td><td>Xáo trộn thứ tự thời gian</td><td>Nhiều mốc cắt nối tiếp</td><td>12</td></tr>
+<tr><td>MAPE, R², RMSE thô</td><td>44% tuần-SKU bằng 0; mã lớn lấn át mã nhỏ</td><td>RMSSE, WAPE, Bias, pinball, coverage</td><td>12</td></tr>
+<tr><td>Dự báo một con số</td><td>Đặt hàng cần "đủ với xác suất 98%"</td><td>Quantile P50–P98, conformal</td><td>10</td></tr>
+<tr><td>Cắt ngoại lai bằng IQR</td><td>Ngoại lai là đơn dự án thật hoặc lỗi gõ, xử lý khác nhau</td><td>Robust z-score theo mốc cắt, đối chiếu phiếu kho</td><td>6</td></tr>
+<tr><td>Coi lượng bán là nhu cầu</td><td>Tuần hết hàng, lượng bán chỉ là chặn dưới</td><td>Cờ hết hàng, loại khỏi huấn luyện và đánh giá</td><td>6</td></tr>
+<tr><td>Nhãn tính trên toàn bộ dữ liệu</td><td>Nhãn ABC "biết" mã nào sẽ bán chạy năm sau</td><td><code>labels(cutoff)</code>, <code>as_of(t)</code></td><td>7, 8</td></tr>
+<tr><td>Đánh giá kinh doanh ở mức khái niệm</td><td>Cần đổi sai số ra tiền và mức phục vụ</td><td>Mô phỏng chính sách tồn kho</td><td>13</td></tr>
+</table></div>
+<p>Đồ án là đồ án chung với môn Trí tuệ nhân tạo. Môn này dạy mạng nơ-ron, huấn luyện bằng PyTorch, fine-tune, CNN và RNN trên ví dụ ảnh và văn bản, với validation chia ngẫu nhiên. Chương 11 áp đúng các kỹ thuật đó vào dự báo nhu cầu, với validation chia theo thời gian và hàm mất mát có mặt nạ cho tuần hết hàng.</p>
+<p>Phần lớn kỹ thuật trong môn vẫn được dùng, chỉ là ở chỗ khác. Cây quyết định là nền của gradient boosting. Ma trận chi phí ở bài giảng 3 trở thành hàm pinball bất đối xứng. Ví dụ "accuracy 99,9% trên dữ liệu lệch" giải thích vì sao không dùng MAPE. K-means và đánh giá cụm dùng để phân nhóm SKU. Apriori và lift dùng cho luật mua kèm. Chuẩn hóa ở Chương 4 trở thành chuẩn hóa theo thang đo của từng chuỗi.</p>
+</section>
+
+<section class="chapter" id="ch2">
+<h2><span class="num">Chương 2</span>Quy trình có cổng kiểm soát</h2>
+<p class="lede">CRISP-DM nói làm gì ở mỗi bước. Đội chuyên nghiệp còn phải nói ai duyệt, đầu ra là file gì, và qua cổng bằng tiêu chí nào.</p>
+<div class="tbl"><table>
+<tr><th>Cổng</th><th>Đầu ra bắt buộc</th><th>Tiêu chí qua cổng</th></tr>
+<tr><td>G0 Khởi động</td><td>Văn bản đồng ý dùng dữ liệu, cam kết bảo mật, problem statement</td><td>Phạm vi dữ liệu và nơi xử lý ghi rõ</td></tr>
+<tr><td>G1 Nghiệp vụ</td><td>Quyết định được hỗ trợ, KPI, baseline hiện tại</td><td>KPI đo được bằng tiền hoặc tỷ lệ</td></tr>
+<tr><td>G2 Dữ liệu</td><td>Từ điển dữ liệu, báo cáo kiểm tra tuần 1</td><td>Không còn kiểm tra mức FAIL</td></tr>
+<tr><td>G3 Chuẩn bị</td><td><code>demand_weekly</code> có phiên bản, lineage, test chống rò rỉ</td><td>Người khác chạy lại ra cùng số</td></tr>
+<tr><td>G4 Mô hình</td><td>Dự báo mọi mô hình trên cùng khung backtest</td><td>Đúng định dạng đầu ra chung</td></tr>
+<tr><td>G5 Đánh giá</td><td>Bảng so sánh, phân tích lỗi</td><td>Qua quality gate ở mọi vòng</td></tr>
+<tr><td>G6 Triển khai</td><td>Test mở một lần, mô phỏng tồn kho, model card</td><td>Kết luận bằng tiền và mức phục vụ</td></tr>
+<tr><td>G7 Vận hành</td><td>Kế hoạch giám sát, lịch huấn luyện lại</td><td>Có ngưỡng cảnh báo và người chịu trách nhiệm</td></tr>
+</table></div>
+<h3>2.1. Pháp lý dữ liệu</h3>
+<p>Dữ liệu ERP có phần là dữ liệu cá nhân: tên khách là hộ kinh doanh, tên nhân viên bán hàng. Luật Bảo vệ dữ liệu cá nhân (số 91/2025/QH15) có hiệu lực từ 01/01/2026. Đội dự án cần văn bản đồng ý ghi mục đích, phạm vi, thời hạn lưu và nơi xử lý; cam kết bảo mật của từng thành viên; và chỉ xuất các cột cần thiết.</p>
+<div class="box pitfall"><span class="label">Cạm bẫy</span><p>Băm SHA-256 có salt là <strong>bút danh hóa</strong>, chưa phải ẩn danh: ai có salt thì dò lại được. Salt và hệ số nhân giá chỉ trưởng nhóm giữ, không nằm trong repo, không gửi qua chat. Dữ liệu, kể cả bản đã băm, không bao giờ được commit.</p></div>
+<h3>2.2. Một nguồn sự thật cho mọi tham số</h3>
+<p>Khi sáu người cùng làm, mỗi người tự đặt một mốc cắt là cách nhanh nhất để có sáu kết quả không so được với nhau. Mọi mốc thời gian, quantile và mức phục vụ nằm ở một file cấu hình duy nhất:</p>
+<figure class="code"><figcaption><span>config.py</span></figcaption><pre><code class="language-python">FOLDS = {
+    &quot;fold1&quot;: {&quot;train_end&quot;: pd.Timestamp(&quot;2023-12-25&quot;), &quot;eval_end&quot;: pd.Timestamp(&quot;2024-12-23&quot;)},
+    &quot;fold2&quot;: {&quot;train_end&quot;: pd.Timestamp(&quot;2024-12-30&quot;), &quot;eval_end&quot;: pd.Timestamp(&quot;2025-12-22&quot;)},
+}
+TEST = {&quot;test&quot;: {&quot;train_end&quot;: pd.Timestamp(&quot;2025-12-29&quot;), &quot;eval_end&quot;: LAST_WEEK}}
+STEP_WEEKS = 4                    # cuốn mốc cắt 4 tuần một lần
+HORIZON = 12                      # tầm nhìn 1–12 tuần
+QUANTILES = [0.5, 0.9, 0.95, 0.98]
+
+# Mức phục vụ mục tiêu theo nhóm ABC (VT6.04).
+SERVICE_LEVEL = {&quot;A&quot;: 0.98, &quot;B&quot;: 0.95, &quot;C&quot;: 0.90}
+REVIEW_WEEKS = 1                  # chu kỳ xem xét đặt hàng: hằng tuần</code></pre></figure>
+<p>Các thực hành đi kèm: seed cố định để hai người chạy ra cùng một kết quả; một lệnh chạy lại toàn bộ; test tự động cho công thức chỉ số và cho rò rỉ; nhật ký lineage để báo cáo chất lượng dữ liệu viết từ số thật; nhật ký kiểm toán cho mỗi lần mở tập test.</p>
+</section>
+
+<section class="chapter" id="ch3">
+<h2><span class="num">Chương 3</span>Bản đồ pipeline</h2>
+<p class="lede">Mười bước, mỗi bước là một script độc lập đọc và ghi file. Hình 3.1 là bản đồ cho phần còn lại của sách.</p>
+<figure class="svgfig"><div class="wrap">
+<svg viewBox="0 0 900 250" role="img" aria-label="Sơ đồ pipeline mười bước">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g>
+<rect class="d-amb" x="15" y="20" width="150" height="62" rx="6"/><text class="d-t" x="90" y="45" text-anchor="middle">1 · Dữ liệu ERP</text><text class="d-s" x="90" y="65" text-anchor="middle">generate_erp_data.py</text>
+<rect class="d-box" x="195" y="20" width="150" height="62" rx="6"/><text class="d-t" x="270" y="45" text-anchor="middle">2 · Hợp đồng dữ liệu</text><text class="d-s" x="270" y="65" text-anchor="middle">data_quality.py</text>
+<rect class="d-box" x="375" y="20" width="150" height="62" rx="6"/><text class="d-t" x="450" y="45" text-anchor="middle">3 · Làm sạch</text><text class="d-s" x="450" y="65" text-anchor="middle">build_demand_weekly.py</text>
+<rect class="d-box" x="555" y="20" width="150" height="62" rx="6"/><text class="d-t" x="630" y="45" text-anchor="middle">4 · Kiểm chứng</text><text class="d-s" x="630" y="65" text-anchor="middle">verify_cleaning.py</text>
+<rect class="d-box" x="735" y="20" width="150" height="62" rx="6"/><text class="d-t" x="810" y="45" text-anchor="middle">5 · Khai phá</text><text class="d-s" x="810" y="65" text-anchor="middle">mining_report.py</text>
+<path class="d-line" d="M165,51 H193" marker-end="url(#ah)"/><path class="d-line" d="M345,51 H373" marker-end="url(#ah)"/><path class="d-line" d="M525,51 H553" marker-end="url(#ah)"/><path class="d-line" d="M705,51 H733" marker-end="url(#ah)"/>
+<path class="d-line" d="M810,82 V148" marker-end="url(#ah)"/>
+<rect class="d-acc" x="735" y="150" width="150" height="62" rx="6"/><text class="d-t" x="810" y="175" text-anchor="middle">6 · Đặc trưng as-of</text><text class="d-s" x="810" y="195" text-anchor="middle">panel.py</text>
+<rect class="d-acc" x="555" y="150" width="150" height="62" rx="6"/><text class="d-t" x="630" y="175" text-anchor="middle">7 · Mô hình</text><text class="d-s" x="630" y="195" text-anchor="middle">baselines · gbm_model</text>
+<rect class="d-acc" x="375" y="150" width="150" height="62" rx="6"/><text class="d-t" x="450" y="175" text-anchor="middle">8 · Backtest + gate</text><text class="d-s" x="450" y="195" text-anchor="middle">backtest.py · metrics.py</text>
+<rect class="d-box" x="195" y="150" width="150" height="62" rx="6"/><text class="d-t" x="270" y="175" text-anchor="middle">9 · Mô phỏng tồn kho</text><text class="d-s" x="270" y="195" text-anchor="middle">inventory_sim.py</text>
+<rect class="d-warn" x="15" y="150" width="150" height="62" rx="6"/><text class="d-t" x="90" y="175" text-anchor="middle">10 · Test một lần</text><text class="d-s" x="90" y="195" text-anchor="middle">final_test.py</text>
+<path class="d-line" d="M735,181 H707" marker-end="url(#ah)"/><path class="d-line" d="M555,181 H527" marker-end="url(#ah)"/><path class="d-line" d="M375,181 H347" marker-end="url(#ah)"/><path class="d-line" d="M195,181 H167" marker-end="url(#ah)"/>
+<text class="d-l" x="15" y="240">Vàng: nguồn dữ liệu · Xanh: phần mô hình (không được đọc tương lai) · Đỏ: bước chỉ chạy một lần, có khóa</text>
+</g></svg></div>
+<figcaption><b>Hình 3.1.</b> Mười bước của pipeline và script tương ứng trong <code>src/</code>. Mỗi bước đọc output của bước trước từ <code>data/</code> và ghi vào <code>data/processed/</code> hoặc <code>outputs/</code>.</figcaption></figure>
+<p>Script điều phối chỉ là một danh sách các bước. Nhờ mỗi bước độc lập, ta chạy lại đúng bước vừa sửa mà không phải chạy cả chuỗi:</p>
+<figure class="code"><figcaption><span>run_pipeline.py</span></figcaption><pre><code class="language-python">STEPS = {
+    &quot;seed&quot;: [&quot;seed/generate_erp_data.py&quot;],
+    &quot;quality&quot;: [&quot;src/data_quality.py&quot;],
+    &quot;clean&quot;: [&quot;src/build_demand_weekly.py&quot;],
+    &quot;verify&quot;: [&quot;src/verify_cleaning.py&quot;],
+    &quot;mine&quot;: [&quot;src/mining_report.py&quot;],
+    &quot;backtest&quot;: [&quot;src/backtest.py&quot;],
+    &quot;plots&quot;: [&quot;src/plot_forecasts.py&quot;],
+    &quot;simulate&quot;: [&quot;src/inventory_sim.py&quot;, &quot;--period&quot;, &quot;fold2&quot;],
+    &quot;simulate-truth&quot;: [&quot;src/inventory_sim.py&quot;, &quot;--period&quot;, &quot;fold2&quot;, &quot;--demand&quot;, &quot;truth&quot;],
+    &quot;final&quot;: [&quot;src/final_test.py&quot;],
+    &quot;dl&quot;: [&quot;src/dl_backtest.py&quot;],   # deep learning + Chronos-2, chỉ 2 vòng; cần torch, chronos-forecasting
+    # Triển khai (chạy sau &quot;final&quot;): đóng gói, chạy hằng tuần, giám sát. Dashboard: streamlit run deploy/dashboard.py
+    &quot;deploy-train&quot;: [&quot;deploy/train_final.py&quot;, &quot;--promote&quot;],
+    &quot;deploy-shadow-train&quot;: [&quot;deploy/train_final.py&quot;, &quot;--train-end&quot;, &quot;2026-06-29&quot;, &quot;--tag&quot;, &quot;shadow_20260629&quot;],
+    &quot;deploy-shadow&quot;: [&quot;deploy/predict_weekly.py&quot;, &quot;--from&quot;, &quot;2026-06-29&quot;, &quot;--to&quot;, &quot;2026-10-26&quot;,
+                      &quot;--package&quot;, &quot;shadow_20260629&quot;],
+    &quot;deploy-predict&quot;: [&quot;deploy/predict_weekly.py&quot;],
+    &quot;monitor&quot;: [&quot;deploy/monitor.py&quot;],
+}
+ALL = [&quot;seed&quot;, &quot;quality&quot;, &quot;clean&quot;, &quot;verify&quot;, &quot;mine&quot;, &quot;backtest&quot;, &quot;plots&quot;, &quot;simulate&quot;, &quot;simulate-truth&quot;]</code></pre></figure>
+<pre class="shell"><code>python3 run_pipeline.py all        # khoảng 8 phút, từ thư mục trống
+python3 run_pipeline.py clean mine # chỉ chạy lại hai bước
+python3 -m pytest -q tests         # 20 test: chỉ số, rò rỉ, kế toán tồn kho, cửa sổ DL, triển khai
+python3 run_pipeline.py final      # mở tập test 2026, có khóa</code></pre>
+</section>
+
+<div class="part-title">Phần II · Dữ liệu</div>
+
+<section class="chapter" id="ch4">
+<h2><span class="num">Chương 4</span>Case study và dữ liệu ERP</h2>
+<p class="lede">Một nhà phân phối thiết bị điện, khoảng 400 mã hàng, 22 nhà cung cấp, dữ liệu từ 01/2021 đến 11/2026.</p>
+<p>Công ty bán bảy nhóm hàng: cáp điện (CAP), thiết bị đóng cắt (CB), công tắc ổ cắm (OCAM), đèn LED (DEN), ống luồn (ONG), tủ điện (TU), quạt công nghiệp (QUAT). Nhà cung cấp trong nước giao trong 1–3 tuần, châu Á 5–9 tuần, châu Âu 12–16 tuần. Mỗi sáng thứ Hai, người mua hàng nhìn lượng bán gần đây, cộng một khoản dư, rồi đặt hàng.</p>
+<h3>4.1. Câu hỏi nghiên cứu và KPI</h3>
+<div class="tbl"><table>
+<tr><th>RQ</th><th>Câu hỏi</th><th>Chương</th></tr>
+<tr><td>RQ1</td><td>Danh mục phân bố thế nào theo ABC, XYZ, SBC? Nhãn có ổn định qua các năm?</td><td>7</td></tr>
+<tr><td>RQ2</td><td>Biến ngoài (giá đồng, tỷ giá, chỉ số xây dựng) có giúp dự báo không?</td><td>7, 12</td></tr>
+<tr><td>RQ3</td><td>Mô hình nào dự báo tốt nhất?</td><td>9, 11, 12</td></tr>
+<tr><td>RQ4</td><td>Nhãn khai phá dữ liệu có làm mô hình tốt hơn không?</td><td>12</td></tr>
+<tr><td>RQ5</td><td>Đặt hàng theo dự báo thì vốn tồn và mức phục vụ thay đổi bao nhiêu?</td><td>13</td></tr>
+</table></div>
+<p>KPI nghiệp vụ là vốn tồn kho bình quân và mức phục vụ theo tuần, với mục tiêu 98% cho nhóm A, 95% cho nhóm B, 90% cho nhóm C. KPI kỹ thuật là RMSSE, pinball chuẩn hóa, coverage và Bias (Chương 12).</p>
+<h3>4.2. Sáu bảng ERP</h3>
+<div class="tbl"><table>
+<tr><th>Bảng</th><th class="n">Số dòng</th><th>Nội dung chính</th><th>Bẫy</th></tr>
+<tr><td><code>sales_order_line</code></td><td class="n">251.533</td><td>Dòng đơn: ngày đặt, khách, mã, số lượng, giá, loại đơn, trạng thái</td><td>Trùng, hủy, dòng âm, gõ nhầm, cờ dự án thiếu, bộ mã đổi khi đổi ERP</td></tr>
+<tr><td><code>sales_return</code></td><td class="n">4.192</td><td>Phiếu trả, tham chiếu dòng gốc, lý do</td><td>Đến sau 1–13 tuần</td></tr>
+<tr><td><code>item_master</code></td><td class="n">432</td><td>Danh mục, nhóm hàng, NCC, quy cách, MOQ, giá vốn</td><td><code>replaced_by</code> chỉ ghi cho một nửa số cặp</td></tr>
+<tr><td><code>inventory_txn</code></td><td class="n">277.778</td><td>Tồn đầu, nhập mua, xuất bán, nhập trả, kiểm kê</td><td>Hàng trả vào kho riêng</td></tr>
+<tr><td><code>inventory_snapshot</code></td><td class="n">528.768</td><td>Tồn cuối ngày kho bán</td><td>Chỉ có từ 01/07/2023, thiếu 3 ngày</td></tr>
+<tr><td><code>purchase_order_line</code></td><td class="n">29.240</td><td>Phiếu mua: ngày đặt, dự kiến, nhận, số lượng</td><td>Giao trễ, giao thiếu</td></tr>
+<tr><td><code>customer</code></td><td class="n">651</td><td>Loại khách, vùng, nhân viên phụ trách</td><td>Một mã "khách lẻ" gom nhiều người</td></tr>
+</table></div>
+<p>Dữ liệu ngoài (giá đồng tuần, tỷ giá ngày, chỉ số xây dựng tháng) luôn có hai cột thời gian: <code>ref_period</code> là kỳ số liệu nói về, <code>published_at</code> là ngày số liệu được công bố. Phân biệt hai cột này là điều kiện để không rò rỉ (Chương 8).</p>
+</section>
+
+<section class="chapter" id="ch5">
+<h2><span class="num">Chương 5</span>Seed dữ liệu giả lập như thật</h2>
+<p class="lede">Muốn luyện pipeline trước khi có dữ liệu thật, cần dữ liệu giả có cùng cấu trúc và cùng cơ chế sinh lỗi, kèm đáp án.</p>
+<p>Nguyên tắc thiết kế là <strong>sinh nguyên nhân trước, quan sát sau</strong>. Bộ sinh tạo nhu cầu thật của từng mã, cho nó đi qua một người mua hàng giả lập đặt hàng theo thói quen, để hết hàng xảy ra tự nhiên. Chỉ phần bán được mới thành dòng đơn, rồi nhiễu ERP được thêm vào. Nhờ vậy các bẫy có cơ chế giống thật, và mỗi bẫy có đáp án trong <code>data/_truth/</code>.</p>
+<div class="eq"><span class="m">μ<sub>i,t</sub> = b<sub>i</sub> · e<sup>τ<sub>i</sub>·năm</sup> · S<sub>năm</sub>(t) · T<sub>Tết</sub>(t) · C<sub>COVID</sub>(t) · V<sub>VAT</sub>(t) · X<sub>xây dựng</sub>(t − 8)<sup>β</sup> · (1 + γ·ΔCu<sub>4 tuần</sub>)</span><span class="n">(5.1)</span></div>
+<p>Mức kỳ vọng (5.1) được nhân với nhiễu theo kiểu nhu cầu. Phân loại Syntetos–Boylan–Croston (Chương 7) chia nhu cầu thành bốn kiểu, và bộ sinh tạo đúng bốn kiểu đó:</p>
+<figure class="code"><figcaption><span>seed/generate_erp_data.py</span></figcaption><pre><code class="language-python">def draw_demand(items: pd.DataFrame, level: np.ndarray) -&gt; np.ndarray:
+    D = np.zeros_like(level, dtype=np.int64)
+    for i, it in enumerate(items.itertuples()):
+        mu = np.maximum(level[i], 1e-6)
+        if it.pattern == &quot;smooth&quot;:
+            k = 15.0
+            D[i] = rng.negative_binomial(k, k / (k + mu))
+        elif it.pattern == &quot;erratic&quot;:
+            k = 2.0
+            D[i] = rng.negative_binomial(k, k / (k + mu))
+        elif it.pattern == &quot;intermittent&quot;:
+            occ = rng.random(T) &lt; it.occ
+            D[i] = occ * (1 + rng.poisson(np.maximum(mu / it.occ - 1, 0)))
+        else:
+            occ = rng.random(T) &lt; it.occ
+            k = .7
+            m2 = np.maximum(mu / it.occ - 1, .05)
+            D[i] = occ * (1 + rng.negative_binomial(k, k / (k + m2)))
+    return D</code></pre></figure>
+<p>Hết hàng xuất hiện khi người mua hàng giả lập đặt theo trung bình <em>lượng bán</em>, vốn đã bị chặn. Ba dòng dưới là trái tim của hiện tượng "nhu cầu bị che":</p>
+<figure class="code"><figcaption><span>seed/generate_erp_data.py</span></figcaption><pre><code class="language-python">on_hand += arrivals[:, t]
+on_order -= arrivals[:, t]
+avail_hist[:, t] = on_hand
+S[:, t] = np.minimum(D[:, t], on_hand).astype(np.int64)
+on_hand -= S[:, t]</code></pre></figure>
+<figure class="img"><img src="fig/eb_censored_demand.png" alt="Nhu cầu thật và lượng bán ERP của một mã năm 2022" loading="lazy">
+<figcaption><b>Hình 5.1.</b> Mã chịu hết hàng nhiều nhất năm 2022. Đường đứt là nhu cầu thật (chỉ có trong lab), đường liền là lượng bán ERP ghi nhận. Nền đỏ là tuần hết hàng.</figcaption></figure>
+<h3>5.1. Hiệu chỉnh: giả lập phải "khó vừa đủ"</h3>
+<p>Phiên bản đầu của bộ sinh quá nhiễu: một oracle biết đúng mức kỳ vọng μ chỉ hơn baseline Croston 1,4% RMSSE. Mọi mô hình đều chạm trần, và không thí nghiệm nào phân biệt được mô hình tốt với mô hình kém. Phiên bản sau giảm phân tán của mã bán đều, tăng biên độ mùa vụ và độ phân tán xu hướng, và tăng đệm đặt hàng để hết hàng về mức thực tế.</p>
+<div class="tbl"><table>
+<tr><th>Chỉ tiêu</th><th>Khoảng mục tiêu</th><th>Đạt</th></tr>
+<tr><td>Tuần-SKU có nhu cầu bằng 0</td><td>35–55%</td><td class="n">44,4%</td></tr>
+<tr><td>Nhu cầu bị mất do hết hàng</td><td>5–10%</td><td class="n">6,7%</td></tr>
+<tr><td>Tỷ lệ mã tạo 80% doanh thu</td><td>15–25%</td><td class="n">20%</td></tr>
+<tr><td>Tỷ trọng đơn dự án trong tổng lượng</td><td>10–25%</td><td class="n">15,5%</td></tr>
+<tr><td>Mức cải thiện tối đa của mô hình so với baseline</td><td>≥ 5%</td><td class="n">5,3–7,5%</td></tr>
+</table></div>
+<div class="box verify"><span class="label">Kiểm chứng</span><p>Cùng <code>SEED</code> cho cùng md5 của <code>sales_order_line.parquet</code>. Tồn cuối ngày dựng từ giao dịch không bao giờ âm (có <code>assert</code> trong bộ sinh). Bộ sinh chạy trong khoảng 5 giây.</p></div>
+<div class="box pitfall"><span class="label">Cạm bẫy</span><p>Hàm <code>hash()</code> của Python bị ngẫu nhiên hóa giữa các phiên. Dùng nó để sinh số giả ngẫu nhiên thì dữ liệu đổi sau mỗi lần chạy, dù seed giữ nguyên.</p></div>
+</section>
+
+<section class="chapter" id="ch6">
+<h2><span class="num">Chương 6</span>Hợp đồng dữ liệu và làm sạch</h2>
+<p class="lede">Đo trước, sửa sau. Mọi bước sửa đều ghi lại số dòng bị ảnh hưởng và được đo bằng đáp án.</p>
+<h3>6.1. Hợp đồng dữ liệu</h3>
+<p>Bước đầu tiên không sửa gì, chỉ đo. Mỗi kiểm tra trả về PASS, WARN hoặc FAIL. Ví dụ kiểm tra đối chiếu hai hệ thống ghi cùng một sự kiện:</p>
+<figure class="code"><figcaption><span>src/data_quality.py</span></figcaption><pre><code class="language-python"># Đối chiếu đơn bán với phiếu xuất kho: lệch số lượng = dấu hiệu nhập sai.
+xb = txn[txn.txn_type == &quot;XUAT_BAN&quot;].assign(qty_txn=lambda d: -d.qty)[[&quot;ref_id&quot;, &quot;qty_txn&quot;]]
+sd = s.drop_duplicates()
+sd = sd[sd.status == &quot;HOAN_TAT&quot;].assign(ref_id=lambda d: d.so_id + &quot;#&quot; + d.line_no.astype(str))
+m = sd.merge(xb, on=&quot;ref_id&quot;, how=&quot;inner&quot;)
+mismatch = m[m.qty != m.qty_txn]
+check(res, &quot;sales khớp phiếu xuất kho&quot;, len(mismatch) == 0,
+      f&quot;{len(mismatch)} dòng lệch số lượng giữa đơn bán và phiếu xuất (nghi nhập sai)&quot;, warn_only=True)</code></pre></figure>
+<div class="box verify"><span class="label">Kiểm chứng</span><p>19 kiểm tra, 15 PASS, 4 WARN, 0 FAIL: 627 dòng trùng y hệt, 392 dòng âm, 30 dòng lệch phiếu xuất kho, thiếu tồn 3 ngày. Tồn dựng lại từ giao dịch khớp 100% tồn ERP lưu.</p></div>
+<h3>6.2. Thứ tự các bước làm sạch</h3>
+<figure class="img"><img src="fig/eb_cleaning_waterfall.png" alt="Số dòng đơn bán sau từng bước làm sạch" loading="lazy">
+<figcaption><b>Hình 6.1.</b> Số dòng sau từng bước, lấy từ <code>outputs/cleaning_lineage.json</code>. Báo cáo chất lượng dữ liệu viết từ file này, không đếm tay.</figcaption></figure>
+<p>Thứ tự có chủ đích. Bước đối chiếu phiếu xuất kho phải đứng trước bước gắn cờ đơn dự án: một dòng gõ nhầm 10 thành 1.000 trông giống hệt một đơn dự án. Nguyên tắc chung là hệ thống gắn với hàng hóa vật lý (phiếu kho) đáng tin hơn hệ thống nhập tay (đơn bán).</p>
+<h3>6.3. Đơn dự án: robust z-score tính theo mốc cắt</h3>
+<p>Z-score thường bị chính ngoại lai kéo lệch. Robust z-score thay trung bình bằng trung vị, và độ lệch chuẩn bằng IQR chia 1,349 (với phân phối chuẩn, IQR ≈ 1,349σ):</p>
+<div class="eq"><span class="m">z<sub>robust</sub> = (x − median) / σ̂ ,&nbsp;&nbsp; σ̂ = max(IQR / 1,349 ; 0,25·median ; 1)</span><span class="n">(6.1)</span></div>
+<p>Trung vị và IQR của mỗi dòng chỉ tính trên các dòng của cùng mã trong 365 ngày <em>trước</em> dòng đó (<code>closed="left"</code>). Như vậy ngưỡng tại năm 2024 không dùng thông tin năm 2025.</p>
+<figure class="code"><figcaption><span>src/build_demand_weekly.py</span></figcaption><pre><code class="language-python">def flag_project_lines(s: pd.DataFrame, customers: pd.DataFrame) -&gt; pd.Series:
+    &quot;&quot;&quot;Đơn dự án = cờ ERP, HOẶC khách loại dự án, HOẶC số lượng vượt xa mức thường của chính mã đó.
+
+    Mức thường tính bằng trung vị và IQR của các dòng TRONG 365 NGÀY TRƯỚC dòng đang xét
+    (closed=&#x27;left&#x27;), nên ngưỡng tại mỗi thời điểm chỉ dùng quá khứ, tính lại được ở mọi mốc cắt.
+    &quot;&quot;&quot;
+    s = s.sort_values([&quot;item_code&quot;, &quot;order_date&quot;])
+    med = pd.Series(np.nan, index=s.index)
+    q1, q3, cnt = med.copy(), med.copy(), med.copy()
+    for _, g in s.groupby(&quot;item_code&quot;, sort=False):
+        x = g.set_index(&quot;order_date&quot;).qty.astype(float)
+        roll = x.rolling(&quot;365D&quot;, closed=&quot;left&quot;)
+        med[g.index] = roll.median().to_numpy()
+        q1[g.index] = roll.quantile(.25).to_numpy()
+        q3[g.index] = roll.quantile(.75).to_numpy()
+        cnt[g.index] = roll.count().to_numpy()
+    sigma = np.maximum.reduce([(q3 - q1) / 1.349, .25 * med, pd.Series(1.0, index=s.index)])
+    z = (s.qty - med) / sigma
+    ctype = s.customer_key.map(customers.set_index(&quot;customer_key&quot;).customer_type)
+    enough = cnt &gt;= 8
+    statistical = enough &amp; (((z &gt;= 5) &amp; (s.qty &gt;= 4 * med) &amp; ctype.isin([&quot;NHATHAU&quot;, &quot;DUAN&quot;])) | (z &gt;= 10))
+    is_project = (s.order_type == &quot;DU_AN&quot;) | (ctype == &quot;DUAN&quot;) | statistical
+    return is_project.reindex(s.index), z.reindex(s.index)</code></pre></figure>
+<figure class="img"><img src="fig/eb_project_flag.png" alt="Dòng đơn của một mã cáp theo thời gian, đơn dự án được đánh dấu" loading="lazy">
+<figcaption><b>Hình 6.2.</b> Các dòng đơn của một mã cáp (thang log). Đơn dự án nằm cách xa trung vị trượt của chính mã đó một đến hai bậc độ lớn.</figcaption></figure>
+<div class="box verify"><span class="label">Kiểm chứng</span><p>1.584 dòng được gắn cờ so với 1.409 dòng dự án thật: precision 0,857, recall 0,964, F1 0,907. Chỉ dùng cờ của ERP thì recall khoảng 0,6. Danh sách vẫn phải qua người nghiệp vụ duyệt: máy bắt rộng, người loại bớt.</p></div>
+<h3>6.4. Ghép mã cũ với mã thay thế</h3>
+<p>Khi hãng ra mẫu mới, mã cũ ngừng và mã mới bắt đầu. Thuật toán ưu tiên trường <code>replaced_by</code> của ERP, sau đó chấm điểm các mã cùng nhóm bắt đầu bán trong khoảng ±6 tuần quanh ngày mã cũ dừng:</p>
+<div class="eq"><span class="m">score = 0,6 · cos(TF-IDF n-gram ký tự 3–5) + 0,4 · (1 − |Δtuần| / 6)</span><span class="n">(6.2)</span></div>
+<figure class="code"><figcaption><span>src/build_demand_weekly.py</span></figcaption><pre><code class="language-python">def propose_code_mapping(s: pd.DataFrame, items: pd.DataFrame, max_gap_weeks: int = 6) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;Đề xuất cặp mã cũ -&gt; mã mới: ưu tiên trường replaced_by của ERP, sau đó tên + thời điểm.
+
+    Điểm = 0.6 * độ giống tên (TF-IDF ký tự) + 0.4 * độ khớp thời điểm (mã cũ dừng gần lúc mã mới bắt đầu).
+    Kết quả là DANH SÁCH ĐỀ XUẤT để người am hiểu nghiệp vụ duyệt (TN.06), không tự động áp dụng.
+    &quot;&quot;&quot;
+    span = s.groupby(&quot;item_code&quot;).order_date.agg([&quot;min&quot;, &quot;max&quot;])
+    last_data = s.order_date.max()
+    ended = span[span[&quot;max&quot;] &lt; last_data - pd.Timedelta(weeks=8)]
+    started = span[span[&quot;min&quot;] &gt; s.order_date.min() + pd.Timedelta(weeks=8)]
+    it = items.set_index(&quot;item_code&quot;)
+    rows = []
+    erp = it.replaced_by.dropna()
+    for old, new in erp.items():
+        rows.append((old, new, 1.0, &quot;ERP replaced_by&quot;))
+    vec = TfidfVectorizer(analyzer=&quot;char_wb&quot;, ngram_range=(3, 5)).fit(it.item_name)
+    for old in ended.index.difference(erp.index):
+        cands = started.index[(started.index != old)]
+        cands = [c for c in cands if it.loc[c, &quot;category_code&quot;] == it.loc[old, &quot;category_code&quot;]]
+        if not cands:
+            continue
+        gap = (started.loc[cands, &quot;min&quot;] - ended.loc[old, &quot;max&quot;]).dt.days / 7
+        ok = gap.abs() &lt;= max_gap_weeks
+        cands = gap.index[ok]
+        if len(cands) == 0:
+            continue
+        sim = (vec.transform([it.loc[old, &quot;item_name&quot;]]) @ vec.transform(it.loc[cands, &quot;item_name&quot;]).T).toarray()[0]
+        score = .6 * sim + .4 * (1 - gap[ok].abs().to_numpy() / max_gap_weeks)
+        b = int(np.argmax(score))
+        rows.append((old, cands[b], float(score[b]), f&quot;tên giống {sim[b]:.2f}, lệch {gap[ok].iloc[b]:+.0f} tuần&quot;))
+    prop = pd.DataFrame(rows, columns=[&quot;old_code&quot;, &quot;new_code&quot;, &quot;score&quot;, &quot;evidence&quot;])
+    prop = prop.sort_values(&quot;score&quot;, ascending=False).drop_duplicates(&quot;new_code&quot;).drop_duplicates(&quot;old_code&quot;)
+    return prop.reset_index(drop=True)</code></pre></figure>
+<div class="tbl"><table>
+<tr><th class="n">Ngưỡng duyệt</th><th class="n">Cặp đề xuất</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">F1</th></tr>
+<tr><td class="n">0,5</td><td class="n">33</td><td class="n">0,970</td><td class="n">1,000</td><td class="n">0,985</td></tr>
+<tr class="hl"><td class="n">0,6 (chọn)</td><td class="n">33</td><td class="n">0,970</td><td class="n">1,000</td><td class="n">0,985</td></tr>
+<tr><td class="n">0,7</td><td class="n">30</td><td class="n">1,000</td><td class="n">0,938</td><td class="n">0,968</td></tr>
+</table></div>
+<p class="tbl-cap">Bảng 6.1. Đánh đổi precision–recall khi chọn ngưỡng duyệt, so với 32 cặp thật.</p>
+<h3>6.5. Nhu cầu bị che và cờ hết hàng</h3>
+<p>ERP ghi <em>lượng bán</em>, không ghi <em>nhu cầu</em>: bán = min(nhu cầu, tồn có sẵn). Tuần hết hàng, lượng bán chỉ là chặn dưới. Lab gắn cờ tuần có ít nhất một ngày tồn cuối ngày bằng 0, rồi loại các tuần này khỏi huấn luyện và đánh giá.</p>
+<p>Với chuỗi ghép từ nhiều mã, chỉ coi là hết hàng khi mọi mã đang sống đều hết. "Đang sống" phải xét theo vòng đời của mã, không theo việc tuần đó có dòng bán:</p>
+<figure class="code"><figcaption><span>src/build_demand_weekly.py</span></figcaption><pre><code class="language-python"># Mã &quot;đang sống&quot; theo vòng đời (tuần bán đầu..tuần bán cuối), KHÔNG theo việc tuần đó có bán:
+# tuần hết hàng trọn tuần không có dòng bán nào nhưng mã vẫn đang sống.
+life = s.groupby(&quot;item_code&quot;).week.agg([&quot;min&quot;, &quot;max&quot;])
+wk_cols = pd.DatetimeIndex(zero_week.columns)
+active = pd.DataFrame({c: (wk_cols &gt;= r[&quot;min&quot;]) &amp; (wk_cols &lt;= r[&quot;max&quot;]) for c, r in life.iterrows()},
+                      index=wk_cols).T
+codes_by_uid = s.groupby(&quot;uid&quot;).item_code.unique()
+flags = []
+for uid, codes in codes_by_uid.items():
+    zw = zero_week.reindex(index=list(codes)).fillna(False)
+    if len(codes) == 1:
+        f = zw.iloc[0]
+    else:  # nhiều mã: chỉ coi là hết hàng khi mọi mã đang bán tuần đó đều hết
+        act = active.reindex(index=list(codes), columns=zw.columns).fillna(False).astype(bool)
+        f = (zw | ~act).all(axis=0) &amp; act.any(axis=0)
+    flags.append(pd.DataFrame({&quot;unique_id&quot;: uid, &quot;week&quot;: f.index, &quot;stockout_flag&quot;: f.to_numpy()}))</code></pre></figure>
+<div class="box pitfall"><span class="label">Cạm bẫy</span><p>Phiên bản đầu xét "đang sống" theo việc tuần đó có bán. Tuần hết hàng trọn tuần không có dòng bán nào, nên cờ không bao giờ bật ở chuỗi nhiều mã: bỏ sót một nửa số tuần hết hàng của 33 chuỗi. Lỗi này được một lượt review code độc lập tìm ra.</p></div>
+<div class="box verify"><span class="label">Kiểm chứng</span><p>Cờ hết hàng: precision 0,697, recall 0,904 (trước khi sửa: 0,862). Tổng nhu cầu thường sau làm sạch lệch đáp án −0,25%; 99,75% số tuần-chuỗi khớp đúng từng đơn vị. 7,35% nhu cầu thật bị che, không khôi phục được từ ERP.</p></div>
+</section>
+
+<section class="chapter" id="ch7">
+<h2><span class="num">Chương 7</span>Khai phá dữ liệu</h2>
+<p class="lede">ABC-XYZ, phân loại SBC, mùa vụ Tết, luật kết hợp và phân cụm. Mọi nhãn tính theo mốc cắt.</p>
+<h3>7.1. Nhãn theo mốc cắt</h3>
+<p>Nhãn ABC tính trên toàn kỳ 2021–2026 rồi đưa vào mô hình dự báo 2024 là rò rỉ: nhãn đó biết mã nào sẽ bán chạy năm 2025. Hàm dưới chỉ đọc các cột ≤ mốc cắt <code>o</code>:</p>
+<figure class="code"><figcaption><span>src/panel.py</span></figcaption><pre><code class="language-python">def labels_at(p: Panel, o: int) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;labels(cutoff) của VT3.08: ABC, XYZ, SBC chỉ từ dữ liệu tuần &lt;= o.&quot;&quot;&quot;
+    y52 = p.Y[:, max(0, o - 51):o + 1]
+    r52 = np.nan_to_num(p.R[:, max(0, o - 51):o + 1]).sum(1)
+    order = np.argsort(-r52)
+    share = np.cumsum(r52[order]) / max(r52.sum(), 1e-9)
+    abc = np.empty(len(r52), dtype=object)
+    abc[order] = np.where(share &lt;= ABC_CUTS[0], &quot;A&quot;, np.where(share &lt;= ABC_CUTS[1], &quot;B&quot;, &quot;C&quot;))
+    abc[r52 &lt;= 0] = &quot;C&quot;
+    with np.errstate(all=&quot;ignore&quot;):
+        mu, sd = np.nanmean(y52, 1), np.nanstd(y52, 1)
+        cv = np.where(mu &gt; 0, sd / mu, np.inf)
+    xyz = np.where(cv &lt; XYZ_CUTS[0], &quot;X&quot;, np.where(cv &lt;= XYZ_CUTS[1], &quot;Y&quot;, &quot;Z&quot;))
+    y104 = p.Y[:, max(0, o - 103):o + 1]
+    n_obs = np.sum(~np.isnan(y104), 1)
+    nz = np.nan_to_num(y104) &gt; 0
+    k = nz.sum(1)
+    with np.errstate(all=&quot;ignore&quot;):
+        adi = np.where(k &gt; 0, n_obs / np.maximum(k, 1), np.inf)
+        sizes = np.where(nz, y104, np.nan)
+        m, v = np.nanmean(sizes, 1), np.nanvar(sizes, 1)
+        cv2 = np.where(k &gt;= 2, v / m ** 2, 0.0)
+    sbc = np.where(adi &lt; SBC_ADI, np.where(cv2 &lt; SBC_CV2, 0, 1), np.where(cv2 &lt; SBC_CV2, 2, 3))
+    return pd.DataFrame({&quot;unique_id&quot;: p.ids, &quot;abc&quot;: abc, &quot;xyz&quot;: xyz, &quot;sbc&quot;: SBC_NAMES[sbc], &quot;adi&quot;: adi,
+                         &quot;cv2&quot;: cv2, &quot;cv&quot;: cv, &quot;revenue_52w&quot;: r52, &quot;n_obs_104&quot;: n_obs})</code></pre></figure>
+<div class="eq"><span class="m">ADI = số tuần quan sát / số tuần có nhu cầu &gt; 0 ,&nbsp;&nbsp; CV² = Var(cỡ đơn &gt; 0) / Mean(cỡ đơn &gt; 0)²</span><span class="n">(7.1)</span></div>
+<p>Ngưỡng của Syntetos, Boylan và Croston (2005): ADI 1,32 và CV² 0,49 chia nhu cầu thành <em>đều</em>, <em>thất thường</em>, <em>lẻ tẻ</em>, <em>gộp cục</em>.</p>
+<figure class="img"><img src="fig/abc_xyz_sbc.png" alt="Ma trận ABC-XYZ và biểu đồ phân tán SBC" loading="lazy">
+<figcaption><b>Hình 7.1.</b> Trái: số SKU và tỷ trọng doanh thu theo ABC × XYZ tại mốc 30/12/2024. Phải: phân loại SBC theo ADI và CV².</figcaption></figure>
+<div class="box verify"><span class="label">Kiểm chứng (RQ1)</span><p>38 mã AX tạo 52,1% doanh thu; 123 mã CZ chỉ tạo 2,6%. SBC: 151 đều, 69 thất thường, 101 lẻ tẻ, 48 gộp cục. Mỗi năm 12–14% số mã đổi kiểu nhu cầu và 7–10% đổi nhóm ABC, nên nhãn phải tính lại ở mỗi mốc cắt.</p></div>
+<h3>7.2. Mùa vụ Tết</h3>
+<figure class="img"><img src="fig/tet_profile.png" alt="Chỉ số mùa vụ quanh Tết theo nhóm hàng" loading="lazy">
+<figcaption><b>Hình 7.2.</b> Chỉ số mùa vụ quanh Tết theo nhóm hàng, trung bình 2022–2026. Tuần mùng 1 còn 1–40% mức thường; hai tuần trước Tết tăng 38–63% (trừ quạt).</figcaption></figure>
+<p>Tết dịch chuyển từ 21/1 đến 20/2 dương lịch, nên "tuần trong năm" không bắt được hiệu ứng này. Đặc trưng đúng là số tuần đến Tết. Đây cũng là lý do seasonal naive kém nhất trong các baseline (Chương 12).</p>
+<h3>7.3. Luật kết hợp và định nghĩa giỏ hàng</h3>
+<div class="eq"><span class="m">support(A→B) = n<sub>AB</sub>/N ,&nbsp; confidence = n<sub>AB</sub>/n<sub>A</sub> ,&nbsp; lift = confidence / (n<sub>B</sub>/N)</span><span class="n">(7.2)</span></div>
+<figure class="code"><figcaption><span>src/mining_report.py</span></figcaption><pre><code class="language-python">def association_rules(lines: pd.DataFrame, min_count: int = 30) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;Luật 2 mục A -&gt; B trên giỏ = đơn hàng thường. support, confidence, lift như bài giảng 6.&quot;&quot;&quot;
+    b = lines[~lines.is_project][[&quot;so_id&quot;, &quot;uid&quot;]].drop_duplicates()
+    n_orders = b.so_id.nunique()
+    multi = b[b.so_id.map(b.so_id.value_counts()) &gt;= 2]
+    pairs = multi.merge(multi, on=&quot;so_id&quot;)
+    pairs = pairs[pairs.uid_x != pairs.uid_y]
+    cnt = pairs.groupby([&quot;uid_x&quot;, &quot;uid_y&quot;]).size().rename(&quot;n_ab&quot;).reset_index()
+    cnt = cnt[cnt.n_ab &gt;= min_count]
+    item_n = b.uid.value_counts()
+    cnt[&quot;support&quot;] = cnt.n_ab / n_orders
+    cnt[&quot;confidence&quot;] = cnt.n_ab / cnt.uid_x.map(item_n)
+    cnt[&quot;lift&quot;] = cnt.confidence / (cnt.uid_y.map(item_n) / n_orders)
+    return cnt.sort_values(&quot;lift&quot;, ascending=False).rename(columns={&quot;uid_x&quot;: &quot;A&quot;, &quot;uid_y&quot;: &quot;B&quot;})</code></pre></figure>
+<div class="tbl"><table>
+<tr><th>Định nghĩa giỏ</th><th class="n">Cặp lift ≥ 3</th><th class="n">Cặp thật tìm được</th><th class="n">Precision</th></tr>
+<tr><td>Mọi khách</td><td class="n">227</td><td class="n">14 / 25</td><td class="n">6,2%</td></tr>
+<tr class="hl"><td>Bỏ mã "khách lẻ" (13,9% số dòng)</td><td class="n">19</td><td class="n">13 / 25</td><td class="n">68,4%</td></tr>
+</table></div>
+<p class="tbl-cap">Bảng 7.1. Một thao tác định nghĩa lại giỏ hàng làm độ chính xác tăng hơn mười lần.</p>
+<h3>7.4. Phân cụm SKU</h3>
+<p>K-means trên sáu đặc trưng hình dạng chuỗi (log trung bình, ADI, CV², tỷ lệ tuần bằng 0, xu hướng, tỷ trọng dự án), chọn k bằng silhouette. k = 2 tốt nhất (silhouette 0,375), tách mã bán đều lượng lớn khỏi mã lẻ tẻ. ARI giữa cụm và SBC là 0,488; giữa SBC và kiểu nhu cầu thật là 0,661. Cụm không mang thêm thông tin so với SBC. Kết quả âm tính cũng là kết quả.</p>
+<h3>7.5. Biến ngoài: tương quan không phải dự báo</h3>
+<p>Tăng trưởng so cùng kỳ của nhu cầu tháng tương quan 0,41–0,61 với chỉ số xây dựng ở sáu nhóm hàng. Nhưng cả hai cùng chịu đợt suy giảm 2023 và phục hồi 2024; cần sai phân, kiểm định tính dừng, kiểm định Granger và hiệu chỉnh kiểm định nhiều lần trước khi kết luận. Phép thử quyết định là ablation ở Chương 12.</p>
+</section>
+
+<div class="part-title">Phần III · Mô hình</div>
+
+<section class="chapter" id="ch8">
+<h2><span class="num">Chương 8</span>Mốc cắt và đặc trưng as-of</h2>
+<p class="lede">Quy tắc vàng: tại mốc cắt o, chỉ được đọc những gì đã biết vào sáng thứ Hai sau tuần o.</p>
+<figure class="svgfig"><div class="wrap">
+<svg viewBox="0 0 900 200" role="img" aria-label="Giải phẫu một mốc cắt">
+<defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="d-shade" x="40" y="60" width="430" height="44"/>
+<text class="d-t" x="255" y="87" text-anchor="middle">Lịch sử y[·, s], s ≤ o: được đọc</text>
+<rect class="d-box" x="490" y="60" width="370" height="44" rx="0"/>
+<text class="d-l" x="675" y="80" text-anchor="middle">Tuần mục tiêu o+1 … o+12: chỉ được biết LỊCH</text>
+<text class="d-l" x="675" y="96" text-anchor="middle">(số tuần đến Tết, tuần trong năm), không được biết y</text>
+<path class="d-axis" d="M40,120 H870"/>
+<path class="d-axis" d="M470,52 V128"/>
+<text class="d-t" x="470" y="146" text-anchor="middle">mốc cắt o (Chủ nhật)</text>
+<path class="d-axis" d="M490,52 V128" stroke-dasharray="4 3"/>
+<text class="d-l" x="500" y="44">sáng thứ Hai: ra quyết định</text>
+<circle cx="300" cy="170" r="5" fill="var(--accent)"/>
+<text class="d-l" x="312" y="174">số liệu tháng 9, công bố 6/10: published_at ≤ quyết định → dùng được</text>
+<circle cx="560" cy="190" r="5" fill="var(--warn)"/>
+<text class="d-l" x="572" y="194">số liệu tháng 10, công bố 6/11 → chưa được dùng</text>
+<path class="d-line" d="M40,30 H460" marker-end="url(#ah2)"/><text class="d-l" x="40" y="22">huấn luyện: mọi dòng có tuần mục tiêu ≤ train_end</text>
+</svg></div>
+<figcaption><b>Hình 8.1.</b> Giải phẫu một mốc cắt. Biến ngoài lọc theo <code>published_at</code>, không theo <code>ref_period</code>.</figcaption></figure>
+<figure class="code"><figcaption><span>src/io_utils.py</span></figcaption><pre><code class="language-python">def as_of(df: pd.DataFrame, t, value_col: str = &quot;value&quot;) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;Chỉ trả về các dòng đã được CÔNG BỐ tại thời điểm t (VT1.06, chống rò rỉ).
+
+    Lọc theo published_at chứ không theo ref_period: số liệu tháng 10 công bố ngày 6/11
+    thì tại ngày 1/11 chưa được phép dùng.
+    &quot;&quot;&quot;
+    return df[df[&quot;published_at&quot;] &lt;= pd.Timestamp(t)]</code></pre></figure>
+<h3>8.1. Bảng đặc trưng</h3>
+<div class="tbl"><table>
+<tr><th>Nhóm</th><th>Đặc trưng</th><th>Ghi chú</th></tr>
+<tr><td>BASE</td><td>h; lag 0–3, 12; slag = y[o+h−52]; trung bình trượt 4, 13, 26, 52; độ lệch chuẩn 13; tỷ lệ tuần bằng 0; số tuần từ lần bán cuối; số tuần đến Tết, tuần trong năm, cờ COVID của tuần mục tiêu; nhóm hàng</td><td>Mọi đặc trưng mức chia cho thang đo của chuỗi</td></tr>
+<tr><td>DM</td><td>ABC, XYZ, SBC, ADI, CV² tại mốc cắt; tỷ lệ tuần hết hàng 13 tuần; cờ VAT 8%</td><td>Để kiểm RQ4</td></tr>
+<tr><td>EXT</td><td>Biến động giá đồng 4 và 13 tuần, tỷ giá 13 tuần, chỉ số xây dựng</td><td>Để kiểm RQ2</td></tr>
+</table></div>
+<p>Mỗi mốc cắt sinh một dòng cho mỗi tầm nhìn h (chiến lược dự báo trực tiếp, h là một đặc trưng):</p>
+<figure class="code"><figcaption><span>src/panel.py</span></figcaption><pre><code class="language-python">for h in hs:
+    tw = p.weeks[o] + pd.Timedelta(weeks=h)
+    f = pd.DataFrame(common)
+    f[&quot;h&quot;] = h
+    f[&quot;origin&quot;] = o
+    f[&quot;ds&quot;] = tw
+    f[&quot;slag&quot;] = p.Y[:, o + h - 52] / scale if o + h - 52 &gt;= 0 else np.nan
+    f[&quot;t_wtt&quot;] = int(weeks_to_tet(pd.DatetimeIndex([tw]))[0])
+    f[&quot;t_woy&quot;] = int(tw.isocalendar().week)
+    f[&quot;t_covid&quot;] = int(in_periods(pd.DatetimeIndex([tw]), [COVID_2021])[0])
+    f[&quot;t_vat8&quot;] = int(in_periods(pd.DatetimeIndex([tw]), VAT8_PERIODS)[0])
+    if o + h &lt; p.T:
+        f[&quot;y&quot;] = p.Y[:, o + h]
+        f[&quot;stockout&quot;] = p.SO[:, o + h]
+    else:
+        f[&quot;y&quot;], f[&quot;stockout&quot;] = np.nan, False
+    frames.append(f)</code></pre></figure>
+<h3>8.2. Chứng minh không rò rỉ bằng test</h3>
+<p>Một tuyên bố "không rò rỉ" chỉ đáng tin khi có test. Test dưới thay toàn bộ dữ liệu sau mốc cắt bằng số ngẫu nhiên, rồi kiểm tra đặc trưng, nhãn và dự báo baseline tại mốc cắt không đổi:</p>
+<figure class="code"><figcaption><span>tests/test_no_leakage.py</span></figcaption><pre><code class="language-python">@pytest.fixture(scope=&quot;module&quot;)
+def panels():
+    from src.panel import Panel
+    p = Panel(pd.read_parquet(DW))
+    q = Panel(pd.read_parquet(DW))
+    o = p.idx(&quot;2023-12-25&quot;)
+    q.Y, q.R, q.SO = q.Y.copy(), q.R.copy(), q.SO.copy()  # pandas 3 trả mảng chỉ đọc
+    rng = np.random.default_rng(0)
+    future = q.Y[:, o + 1:]
+    q.Y[:, o + 1:] = np.where(np.isnan(future), np.nan, rng.integers(0, 1000, future.shape))
+    q.R[:, o + 1:] = q.R[:, o + 1:] * 50
+    q.SO[:, o + 1:] = ~q.SO[:, o + 1:]
+    return p, q, o</code></pre></figure>
+<figure class="code"><figcaption><span>tests/test_no_leakage.py</span></figcaption><pre><code class="language-python">def test_features_ignore_future(panels):
+    from src.panel import features_at, labels_at
+    p, q, o = panels
+    a = features_at(p, o, [1, 4, 12], labels_at(p, o)).drop(columns=[&quot;y&quot;, &quot;stockout&quot;])
+    b = features_at(q, o, [1, 4, 12], labels_at(q, o)).drop(columns=[&quot;y&quot;, &quot;stockout&quot;])
+    pd.testing.assert_frame_equal(a, b)</code></pre></figure>
+</section>
+
+<section class="chapter" id="ch9">
+<h2><span class="num">Chương 9</span>Baseline và mô hình toàn cục</h2>
+<p class="lede">Mô hình phức tạp chỉ có giá trị khi thắng được các mô hình đơn giản.</p>
+<h3>9.1. Baseline cho nhu cầu lẻ tẻ</h3>
+<div class="eq"><span class="m">SES: ℓ<sub>t</sub> = ℓ<sub>t−1</sub> + α(y<sub>t</sub> − ℓ<sub>t−1</sub>) ;&nbsp; Croston: khi y<sub>t</sub> &gt; 0, z ← z + α(y − z), p ← p + α(q − p) ;&nbsp; SBA: ŷ = (1 − α/2)·z/p</span><span class="n">(9.1)</span></div>
+<div class="eq"><span class="m">TSB: π ← π + β(𝟙[y<sub>t</sub> &gt; 0] − π) mỗi tuần ;&nbsp; z ← z + α(y − z) khi y<sub>t</sub> &gt; 0 ;&nbsp; ŷ = π·z</span><span class="n">(9.2)</span></div>
+<p>Toàn bộ baseline chạy đồng thời trên 400 chuỗi trong một vòng lặp qua thời gian; mỗi phép tính là một vector:</p>
+<figure class="code"><figcaption><span>src/baselines.py</span></figcaption><pre><code class="language-python">def _recursions(Y: np.ndarray):
+    &quot;&quot;&quot;Chạy một lượt qua lịch sử, cập nhật SES (nhiều alpha), Croston và TSB cùng lúc.&quot;&quot;&quot;
+    n, t_len = Y.shape
+    lvl = np.full((len(ALPHAS), n), np.nan)
+    sse = np.zeros((len(ALPHAS), n))
+    a = .1
+    z = np.full(n, np.nan)      # Croston: cỡ đơn khi có bán
+    q = np.full(n, np.nan)      # Croston: khoảng cách giữa hai lần có bán
+    gap = np.ones(n)
+    pz = np.full(n, np.nan)     # TSB: xác suất có bán
+    zz = np.full(n, np.nan)     # TSB: cỡ đơn
+    for t in range(t_len):
+        y = Y[:, t]
+        obs = ~np.isnan(y)
+        err = np.where(obs &amp; ~np.isnan(lvl), y - lvl, 0.0)
+        sse += err ** 2
+        init = obs &amp; np.isnan(lvl)
+        lvl = np.where(init, y, np.where(obs, lvl + ALPHAS[:, None] * err, lvl))
+        pos = obs &amp; (y &gt; 0)
+        first = pos &amp; np.isnan(z)
+        upd = pos &amp; ~first
+        z = np.where(first, y, np.where(upd, z + a * (y - z), z))
+        q = np.where(first, gap, np.where(upd, q + a * (gap - q), q))
+        gap = np.where(pos, 1, np.where(obs, gap + 1, gap))
+        start = obs &amp; np.isnan(pz)
+        pz = np.where(start, (y &gt; 0).astype(float), np.where(obs, pz + a * ((y &gt; 0) - pz), pz))
+        zz = np.where(pos &amp; np.isnan(zz), y, np.where(pos, zz + a * (y - zz), zz))
+    best = np.argmin(np.where(np.isnan(lvl), np.inf, sse), axis=0)
+    ses = lvl[best, np.arange(n)]
+    croston = (1 - a / 2) * z / q
+    tsb = pz * zz
+    return ses, np.nan_to_num(croston), np.nan_to_num(tsb)</code></pre></figure>
+<div class="box exercise"><span class="label">Bài tập</span><p>Chuỗi 4, 0, 4, 0, … bán trung bình 2 cái/tuần. Chứng minh Croston-SBA hội tụ về (1 − 0,05) × 4/2 = 1,9 và TSB về khoảng 2,0, rồi so với test <code>test_croston_on_regular_intermittent_series</code>.</p></div>
+<h3>9.2. Gradient boosting toàn cục</h3>
+<p>Cây quyết định ở bài giảng 3 chia không gian đặc trưng thành vùng. Gradient boosting xây M cây nông nối tiếp, cây thứ m học gradient của hàm mất mát tại dự báo hiện tại:</p>
+<div class="eq"><span class="m">F<sub>m</sub>(x) = F<sub>m−1</sub>(x) + η · h<sub>m</sub>(x),&nbsp;&nbsp; h<sub>m</sub> ≈ −∂L(y, F)/∂F |<sub>F = F<sub>m−1</sub></sub></span><span class="n">(9.3)</span></div>
+<p>Một mô hình cho mọi SKU học chung mẫu Tết, xu hướng và hành vi lẻ tẻ. Mục tiêu chia cho thang đo của chuỗi để mã bán 2 cái và mã bán 500 cái/tuần học chung được. Bản trung bình dùng mất mát Poisson; mỗi quantile một mô hình với mất mát pinball:</p>
+<figure class="code"><figcaption><span>src/gbm_model.py</span></figcaption><pre><code class="language-python">def fit(train: pd.DataFrame, features: list[str], quantiles) -&gt; dict:
+    X = train[features]
+    y = train.y.to_numpy() / train.scale.to_numpy()
+    models = {&quot;mean&quot;: HistGradientBoostingRegressor(loss=&quot;poisson&quot;, **PARAMS).fit(X, y)}
+    for q in quantiles:
+        models[q] = HistGradientBoostingRegressor(loss=&quot;quantile&quot;, quantile=q, **PARAMS).fit(X, y)
+    return models</code></pre></figure>
+<figure class="code"><figcaption><span>src/gbm_model.py</span></figcaption><pre><code class="language-python">def predict(models: dict, df: pd.DataFrame, features: list[str], quantiles) -&gt; pd.DataFrame:
+    X = df[features]
+    s = df.scale.to_numpy()
+    out = pd.DataFrame({&quot;mean&quot;: np.maximum(models[&quot;mean&quot;].predict(X), 0) * s}, index=df.index)
+    qs = np.column_stack([np.maximum(models[q].predict(X), 0) * s for q in quantiles])
+    qs = np.sort(qs, axis=1)
+    for j, q in enumerate(quantiles):
+        out[f&quot;q{int(round(q * 100))}&quot;] = qs[:, j]
+    return out</code></pre></figure>
+<div class="tbl"><table>
+<tr><th>Ý nghĩa</th><th>Lab (scikit-learn)</th><th>LightGBM</th></tr>
+<tr><td>Số cây, hệ số học</td><td><code>max_iter=250</code>, <code>learning_rate=0.05</code></td><td><code>n_estimators=250</code>, <code>learning_rate=0.05</code></td></tr>
+<tr><td>Độ phức tạp, mẫu ở lá</td><td><code>max_leaf_nodes=31</code>, <code>min_samples_leaf=200</code></td><td><code>num_leaves=31</code>, <code>min_data_in_leaf=200</code></td></tr>
+<tr><td>Dữ liệu đếm</td><td><code>loss="poisson"</code></td><td><code>objective="tweedie"</code></td></tr>
+<tr><td>Quantile</td><td><code>loss="quantile", quantile=q</code></td><td><code>objective="quantile", alpha=q</code></td></tr>
+</table></div>
+<p class="tbl-cap">Bảng 9.1. Ánh xạ tham số khi chuyển sang LightGBM trong dự án thật.</p>
+</section>
+
+<section class="chapter" id="ch10">
+<h2><span class="num">Chương 10</span>Quantile và hiệu chỉnh conformal</h2>
+<p class="lede">Đặt hàng là bài toán newsvendor: lượng đặt tối ưu là một quantile của phân phối nhu cầu.</p>
+<div class="eq"><span class="m">Q* = F<sup>−1</sup>( c<sub>u</sub> / (c<sub>u</sub> + c<sub>o</sub>) )</span><span class="n">(10.1)</span></div>
+<p>Với c<sub>u</sub> là chi phí thiếu một đơn vị và c<sub>o</sub> là chi phí thừa. Mức phục vụ 98% tương đương nói thiếu hàng đắt gấp khoảng 49 lần tồn thừa. Quantile được học bằng hàm pinball:</p>
+<div class="eq"><span class="m">L<sub>q</sub>(y, ŷ<sub>q</sub>) = max( q(y − ŷ<sub>q</sub>) , (q − 1)(y − ŷ<sub>q</sub>) )</span><span class="n">(10.2)</span></div>
+<figure class="img"><img src="fig/eb_pinball.png" alt="Hình dạng hàm pinball" loading="lazy" style="max-width:520px;margin:0 auto">
+<figcaption><b>Hình 10.1.</b> Với q = 0,9, dự báo thiếu 10 bị phạt 9, dự báo thừa 10 chỉ bị phạt 1.</figcaption></figure>
+<figure class="code"><figcaption><span>src/metrics.py</span></figcaption><pre><code class="language-python">def pinball(y, q_pred, q: float):
+    &quot;&quot;&quot;Pinball loss của quantile q: max(q*(y-f), (q-1)*(y-f)). Trung bình theo phần tử.&quot;&quot;&quot;
+    d = np.asarray(y, float) - np.asarray(q_pred, float)
+    return np.maximum(q * d, (q - 1) * d)</code></pre></figure>
+<h3>10.1. Split conformal cho baseline</h3>
+<p>Baseline chỉ cho dự báo điểm. Split conformal biến dự báo điểm thành khoảng mà không cần giả định phân phối: lấy phần dư chuẩn hóa trên 52 tuần ngay trước mốc huấn luyện, nhóm theo (mô hình, SBC, nhóm tầm nhìn), và cộng quantile của phần dư vào dự báo điểm.</p>
+<figure class="code"><figcaption><span>src/baselines.py</span></figcaption><pre><code class="language-python">def fit_conformal(calib: pd.DataFrame, quantiles) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;Quantile của phần dư chuẩn hóa (y - f) / scale theo (model, sbc, nhóm tầm nhìn).&quot;&quot;&quot;
+    c = calib.assign(e=(calib.y - calib[&quot;mean&quot;]) / calib.scale, hb=hbucket(calib.h))
+    out = c.groupby([&quot;model&quot;, &quot;sbc&quot;, &quot;hb&quot;]).e.quantile(quantiles).unstack()
+    out.columns = [f&quot;q{int(round(q * 100))}&quot; for q in quantiles]
+    return out.reset_index()</code></pre></figure>
+<figure class="code"><figcaption><span>src/baselines.py</span></figcaption><pre><code class="language-python">def apply_conformal(fc: pd.DataFrame, table: pd.DataFrame, quantiles) -&gt; pd.DataFrame:
+    fc = fc.assign(hb=hbucket(fc.h)).merge(table, on=[&quot;model&quot;, &quot;sbc&quot;, &quot;hb&quot;], how=&quot;left&quot;)
+    cols = [f&quot;q{int(round(q * 100))}&quot; for q in quantiles]
+    for c in cols:
+        fc[c] = np.maximum(fc[&quot;mean&quot;] + fc[c].fillna(0) * fc.scale, 0)
+    fc[cols] = np.sort(fc[cols].to_numpy(), axis=1)  # quantile không được bắt chéo
+    return fc.drop(columns=&quot;hb&quot;)</code></pre></figure>
+<h3>10.2. Conformalized quantile regression</h3>
+<p>Quantile cao của cây boosting thường thiếu độ phủ ở đuôi, vì đuôi có ít dữ liệu. CQR (Romano, Patterson, Candès 2019) huấn luyện mô hình quantile trên giai đoạn kết thúc trước 52 tuần cuối, đo điểm s = (y − q̂(x)) / scale trên 52 tuần cuối, rồi cộng quantile mức ⌈(n+1)α⌉/n của s theo nhóm ABC.</p>
+<figure class="code"><figcaption><span>src/inventory_sim.py</span></figcaption><pre><code class="language-python">def train_cum_gbm(p: Panel, te: int, H: np.ndarray, abc: np.ndarray, conformal: bool = True, alphas=None):
+    &quot;&quot;&quot;GBM quantile trên tổng nhu cầu L+R, có hiệu chỉnh conformal (CQR) theo nhóm ABC.
+
+    Quantile cao (0.98) của cây boosting thường THIẾU độ phủ ở đuôi. CQR: huấn luyện trên
+    cửa sổ kết thúc trước (te - 52), đo phần dư chuẩn hóa s = (y - q_hat) / scale trên 52 tuần
+    cuối, rồi cộng thêm quantile mức alpha của s (hiệu chỉnh mẫu hữu hạn (n+1)alpha/n).
+    &quot;&quot;&quot;
+    alphas = sorted(set(alphas)) if alphas is not None else ALPHA_GRID  # triển khai chỉ cần các alpha đã chọn
+    cal_start = te - 52 if conformal else te
+    tr_rows, cal_rows = [], []
+    for o in range(30, te - int(H.min()), 2):
+        f = cum_features(p, o, H)
+        y, so = cumulative_target(p, o, H)
+        ok = f.active.to_numpy() &amp; ~so &amp; ~np.isnan(y) &amp; (f.n_obs.to_numpy() &gt;= 13)
+        tr_rows.append(f[ok &amp; (o + H &lt;= cal_start)].assign(ycum=y[ok &amp; (o + H &lt;= cal_start)]))
+        cal = ok &amp; (o &gt;= cal_start) &amp; (o + H &lt;= te)
+        cal_rows.append(f[cal].assign(ycum=y[cal], abc_grp=abc[cal]))  # nhãn nhóm riêng, không ghi đè đặc trưng
+    tr = pd.concat(tr_rows, ignore_index=True)
+    models = {a: HistGradientBoostingRegressor(loss=&quot;quantile&quot;, quantile=a, **PARAMS)
+              .fit(tr[CUM_FEATURES], tr.ycum / tr.scale) for a in alphas}
+    adj = {}
+    if conformal:
+        cal = pd.concat(cal_rows, ignore_index=True)
+        for a in alphas:
+            s = cal.ycum / cal.scale - models[a].predict(cal[CUM_FEATURES])
+            for g, sg in s.groupby(cal.abc_grp):
+                n = len(sg)
+                adj[(g, a)] = float(np.quantile(sg, min(1.0, np.ceil((n + 1) * a) / n)))
+    return models, adj</code></pre></figure>
+<div class="box pitfall"><span class="label">Cạm bẫy</span><p>Phiên bản đầu ghi đè cột đặc trưng <code>abc</code> tại các mốc hiệu chỉnh bằng nhãn ABC tại mốc huấn luyện, để dùng làm nhóm. Đặc trưng khi hiệu chỉnh khác đặc trưng khi dự báo thật, và một phần là thông tin tương lai. Sửa bằng một cột nhóm riêng (<code>abc_grp</code>).</p></div>
+<figure class="img"><img src="fig/eb_coverage.png" alt="Coverage thực tế so với mức quantile danh nghĩa" loading="lazy" style="max-width:520px;margin:0 auto">
+<figcaption><b>Hình 10.2.</b> Coverage thực tế trên năm 2025 so với mức danh nghĩa. Cả hai mô hình sát đường chéo ở P90–P98.</figcaption></figure>
+</section>
+
+<section class="chapter" id="ch11">
+<h2><span class="num">Chương 11</span>Deep learning và foundation model</h2>
+<p class="lede">Nội dung môn Trí tuệ nhân tạo (Chương 1–6) áp vào cùng bài toán, chấm trên cùng khung backtest, chỉ số và quality gate với GBM.</p>
+<div class="tbl"><table>
+<tr><th>Chương của môn AI</th><th>Nội dung</th><th>Trong lab</th></tr>
+<tr><td>2 – ANN</td><td>MLP, ReLU, lan truyền ngược</td><td><code>MLPNet</code></td></tr>
+<tr><td>3 – Training DNN</td><td>Dataset/DataLoader, vòng huấn luyện, validation, BatchNorm, Dropout</td><td><code>build_windows</code>, <code>train_model</code></td></tr>
+<tr><td>4 – Fine-tune, thuật toán huấn luyện</td><td>AdamW, scheduler, early stopping, gradient clipping, đóng băng lớp, Hugging Face</td><td><code>train_model</code>, <code>finetune_head</code>, Chronos-2</td></tr>
+<tr><td>5 – CNN</td><td>Tích chập, kernel, padding</td><td><code>CNN1DNet</code> (tích chập 1 chiều giãn)</td></tr>
+<tr><td>6 – RNN</td><td>LSTM, GRU, chuỗi thời gian</td><td><code>RNNNet</code></td></tr>
+</table></div>
+<h3>11.1. Mẫu dữ liệu và cách chia validation</h3>
+<p>Mỗi mẫu là một cặp (chuỗi, mốc cắt o): cửa sổ 52 tuần × 4 kênh (y/scale, có quan sát, cờ hết hàng, số tuần đến Tết), lịch của 12 tuần mục tiêu, nhóm hàng, và mục tiêu 12 tuần có mặt nạ. Khác biệt quan trọng nhất so với ví dụ CIFAR-10 của môn: <strong>validation là 26 tuần mốc cắt cuối của giai đoạn huấn luyện</strong>, không phải mẫu ngẫu nhiên. <code>shuffle=True</code> chỉ trộn bên trong tập huấn luyện.</p>
+<div class="box"><span class="label">Kiểm chứng</span><p>Test <code>test_windows_ignore_future</code> thay dữ liệu sau mốc cắt bằng số ngẫu nhiên; cửa sổ, biến tương lai, thang đo và mặt nạ không đổi.</p></div>
+<h3>11.2. Một đầu ra chung cho mọi kiến trúc</h3>
+<p>Đầu ra sinh 12 × 5 giá trị: trung bình qua <code>softplus</code>, và bốn quantile dựng bằng cộng dồn softplus, nên luôn không âm và không bắt chéo. Hàm mất mát là Poisson NLL cho trung bình cộng pinball cho quantile, chỉ tính trên ô có mặt nạ bằng 1:</p>
+<div class="eq"><span class="m">L = Σ m·(μ̂ − y·log μ̂) / Σ m + Σ m·L<sub>q</sub>(y, q̂) / Σ m</span><span class="n">(11.1)</span></div>
+<figure class="code"><figcaption><span>src/dl_models.py</span></figcaption><pre><code class="language-python">class Head(nn.Module):
+    &quot;&quot;&quot;Đầu ra chung: biểu diễn của encoder + biến tương lai + nhúng nhóm hàng -&gt; (mean, quantile).&quot;&quot;&quot;
+
+    def __init__(self, d_enc: int, n_cat: int, hidden: int = 128, dropout: float = .2):
+        super().__init__()
+        self.emb = nn.Embedding(n_cat, 8)
+        self.net = nn.Sequential(nn.Linear(d_enc + H * N_FUT + 8, hidden), nn.ReLU(), nn.Dropout(dropout),
+                                 nn.Linear(hidden, H * (1 + len(QS))))
+
+    def forward(self, z, fut, cat):
+        raw = self.net(torch.cat([z, fut.flatten(1), self.emb(cat)], 1)).view(-1, H, 1 + len(QS))
+        mean = F.softplus(raw[..., 0])
+        q = torch.cumsum(F.softplus(raw[..., 1:]), dim=-1)  # q50 &lt;= q90 &lt;= q95 &lt;= q98, đều &gt;= 0
+        return mean, q</code></pre></figure>
+<figure class="code"><figcaption><span>src/dl_models.py</span></figcaption><pre><code class="language-python">class RNNNet(nn.Module):
+    &quot;&quot;&quot;Chương 6: encoder LSTM hoặc GRU 2 lớp; trạng thái ẩn cuối cùng tóm tắt 52 tuần lịch sử.&quot;&quot;&quot;
+
+    def __init__(self, n_cat, cell=&quot;lstm&quot;, hidden=64, dropout=.2):
+        super().__init__()
+        rnn = nn.LSTM if cell == &quot;lstm&quot; else nn.GRU
+        self.enc = rnn(N_IN, hidden, num_layers=2, batch_first=True, dropout=dropout)
+        self.head = Head(hidden, n_cat)
+
+    def forward(self, x, fut, cat):
+        out, _ = self.enc(x)
+        return self.head(out[:, -1], fut, cat)</code></pre></figure>
+<figure class="code"><figcaption><span>src/dl_models.py</span></figcaption><pre><code class="language-python">class CNN1DNet(nn.Module):
+    &quot;&quot;&quot;Chương 5: tích chập 1 chiều theo thời gian, giãn 1-2-4-8 để nhìn được cả mùa vụ dài.&quot;&quot;&quot;
+
+    def __init__(self, n_cat, ch=32, dropout=.2):
+        super().__init__()
+        layers, c_in = [], N_IN
+        for d in (1, 2, 4, 8):
+            layers += [nn.Conv1d(c_in, ch, kernel_size=3, dilation=d, padding=&quot;same&quot;), nn.BatchNorm1d(ch), nn.ReLU()]
+            c_in = ch
+        self.conv = nn.Sequential(*layers)
+        self.drop = nn.Dropout(dropout)
+        self.head = Head(2 * ch, n_cat)
+
+    def forward(self, x, fut, cat):
+        h = self.conv(x.transpose(1, 2))                       # (B, ch, L)
+        z = torch.cat([h.mean(-1), h[:, :, -1]], 1)            # gộp trung bình + bước cuối
+        return self.head(self.drop(z), fut, cat)</code></pre></figure>
+<p>Tích chập giãn 1-2-4-8 với kernel 3 cho vùng nhìn 31 tuần. LSTM và GRU đọc tuần tự 52 bước; các cổng của chúng tránh hiện tượng mất gradient của RNN đơn giản.</p>
+<h3>11.3. Vòng huấn luyện</h3>
+<p>Sáu bước của Chương 3 (zero_grad, forward, loss, backward, step, validation) cộng bốn kỹ thuật của Chương 4: AdamW, ReduceLROnPlateau, gradient clipping và early stopping giữ trạng thái có validation loss thấp nhất.</p>
+<figure class="code"><figcaption><span>src/dl_models.py</span></figcaption><pre><code class="language-python">def train_model(model, train_ds, val_ds, epochs=40, lr=1e-3, weight_decay=1e-4, patience=5, clip=1.0,
+                batch_size=512, params=None, seed=0, log=None):
+    &quot;&quot;&quot;Vòng huấn luyện của Chương 3–4: AdamW, ReduceLROnPlateau, gradient clipping, early stopping.
+
+    Trả về mô hình ở epoch có validation loss thấp nhất và lịch sử (epoch, train, val, lr).
+    &quot;&quot;&quot;
+    torch.manual_seed(seed)
+    g = torch.Generator().manual_seed(seed)
+    tl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, generator=g, drop_last=True)  # BatchNorm cần batch &gt; 1
+    vl = DataLoader(val_ds, batch_size=2048)
+    opt = torch.optim.AdamW(params if params is not None else model.parameters(), lr=lr, weight_decay=weight_decay)
+    sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode=&quot;min&quot;, factor=.5, patience=2)
+    best, best_state, bad, hist = np.inf, copy.deepcopy(model.state_dict()), 0, []
+    for ep in range(1, epochs + 1):
+        model.train()
+        tot, n = 0.0, 0
+        for x, fut, cat, y, m in tl:
+            opt.zero_grad()
+            mean, q = model(x, fut, cat)
+            loss = loss_fn(mean, q, y, m)
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), clip)   # chống bùng nổ gradient (RNN)
+            opt.step()
+            tot += loss.item() * len(x)
+            n += len(x)
+        val = evaluate_loss(model, vl)
+        sched.step(val)
+        hist.append({&quot;epoch&quot;: ep, &quot;train_loss&quot;: tot / n, &quot;val_loss&quot;: val, &quot;lr&quot;: opt.param_groups[0][&quot;lr&quot;]})
+        if log:
+            log(f&quot;    epoch {ep:2d} train {tot / n:.4f} val {val:.4f} lr {opt.param_groups[0][&#x27;lr&#x27;]:.1e}&quot;)
+        if val &lt; best - 1e-4:
+            best, best_state, bad = val, copy.deepcopy(model.state_dict()), 0
+        else:
+            bad += 1
+            if bad &gt;= patience:   # early stopping
+                break
+    model.load_state_dict(best_state)
+    return model, hist</code></pre></figure>
+<figure class="img"><img src="fig/eb_dl_learning_curves.png" alt="Đường cong học của bốn mạng nơ-ron" loading="lazy">
+<figcaption><b>Hình 11.1.</b> Đường cong học, vòng 1. MLP overfitting rõ: loss huấn luyện giảm đều, validation thấp nhất ở epoch 6 rồi tăng; early stopping giữ epoch 6. Validation nằm dưới train ở đầu vì Dropout chỉ bật khi huấn luyện.</figcaption></figure>
+<h3>11.4. Fine-tune theo nhóm hàng</h3>
+<p>Theo Chương 4: sao chép LSTM đã huấn luyện cho mọi SKU, đóng băng encoder, học lại đầu ra cho từng nhóm hàng.</p>
+<figure class="code"><figcaption><span>src/dl_models.py</span></figcaption><pre><code class="language-python">def finetune_head(base, train_ds, val_ds, epochs=15, lr=3e-4, seed=0):
+    &quot;&quot;&quot;Chương 4: fine-tune — sao chép mô hình đã huấn luyện, ĐÓNG BĂNG encoder, chỉ học lại đầu ra.&quot;&quot;&quot;
+    model = copy.deepcopy(base)
+    for prm in model.enc.parameters():
+        prm.requires_grad = False
+    head_params = [prm for prm in model.head.parameters()]
+    return train_model(model, train_ds, val_ds, epochs=epochs, lr=lr, patience=3, params=head_params, seed=seed)</code></pre></figure>
+<div class="box pitfall"><span class="label">Kết quả âm tính</span><p>Fine-tune không cải thiện (RMSSE 0,779 so với 0,777 ở vòng 1; 0,766 so với 0,767 ở vòng 2). Mô hình toàn cục đã có nhúng nhóm hàng, và mỗi nhóm ít mẫu hơn nhiều. Fine-tune có giá trị khi chuyển từ dữ liệu lớn và khác sang dữ liệu nhỏ: đó chính là ý tưởng của foundation model.</p></div>
+<h3>11.5. Chronos-2 zero-shot</h3>
+<p>Chronos-2 (khoảng 120 triệu tham số, tải từ Hugging Face) được huấn luyện trước trên rất nhiều chuỗi thời gian và dùng ở đây không qua huấn luyện thêm. Bản <code>chronos2_cov</code> nhận thêm số tuần đến Tết làm biến đồng biến quá khứ và tương lai. Dự báo 364 chuỗi × 13 mốc cắt mất khoảng 20 giây trên CPU.</p>
+<figure class="code"><figcaption><span>src/dl_backtest.py</span></figcaption><pre><code class="language-python">def chronos_forecast(p, origins, series_mask, with_cov: bool, pipe) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;Chronos-2 zero-shot tại từng mốc cắt; ngữ cảnh = toàn bộ lịch sử đã quan sát đến o.&quot;&quot;&quot;
+    wtt_all = weeks_to_tet(pd.date_range(p.weeks[0], periods=p.T + D.H, freq=&quot;W-MON&quot;)).astype(float)
+    first = p.first_obs()
+    rows = []
+    for o in origins:
+        idx = np.where(series_mask &amp; ~np.isnan(p.Y[:, o]))[0]
+        inputs = []
+        for i in idx:
+            y = p.Y[i, first[i]:o + 1]
+            item = {&quot;target&quot;: np.nan_to_num(y)}
+            if with_cov:
+                item[&quot;past_covariates&quot;] = {&quot;wtt&quot;: wtt_all[first[i]:o + 1]}
+                item[&quot;future_covariates&quot;] = {&quot;wtt&quot;: wtt_all[o + 1:o + 1 + D.H]}
+            inputs.append(item)
+        q, mean = pipe.predict_quantiles(inputs, prediction_length=D.H, quantile_levels=list(C.QUANTILES),
+                                         batch_size=256)
+        qa = np.clip(np.stack([t[0].numpy() for t in q]), 0, None)
+        qa = np.sort(qa, axis=-1)
+        ma = np.clip(np.stack([t[0].numpy() for t in mean]), 0, None)
+        w = {&quot;sid&quot;: idx, &quot;origin&quot;: np.full(len(idx), o)}
+        rows.append(to_long(p, w, ma, qa, &quot;chronos2_cov&quot; if with_cov else &quot;chronos2&quot;))
+    return pd.concat(rows, ignore_index=True)</code></pre></figure>
+<h3>11.6. Kết quả</h3>
+<figure class="img"><img src="fig/eb_dl_comparison.png" alt="RMSSE của mọi họ mô hình trên hai vòng" loading="lazy">
+<figcaption><b>Hình 11.2.</b> RMSSE trên hai vòng backtest. Mạng nơ-ron (tím) thắng baseline (xám) nhưng kém GBM (xanh); Chronos-2 zero-shot (cam) ngang baseline theo RMSSE.</figcaption></figure>
+<div class="tbl"><table>
+<tr><th>Mô hình</th><th class="n">RMSSE 2024</th><th class="n">RMSSE 2025</th><th class="n">SPL 2025</th><th class="n">WAPE 2025</th><th class="n">Bias 2025</th><th>Gate</th></tr>
+<tr class="hl"><td>gbm_dm</td><td class="n">0,741</td><td class="n">0,747</td><td class="n">0,221</td><td class="n">0,390</td><td class="n">−2,2%</td><td>Đạt</td></tr>
+<tr><td>cnn1d</td><td class="n">0,766</td><td class="n">0,756</td><td class="n">0,226</td><td class="n">0,395</td><td class="n">−4,6%</td><td>Trượt G1</td></tr>
+<tr><td>mlp</td><td class="n">0,767</td><td class="n">0,758</td><td class="n">0,232</td><td class="n">0,397</td><td class="n">−2,6%</td><td>Trượt G1</td></tr>
+<tr><td>gru</td><td class="n">0,769</td><td class="n">0,761</td><td class="n">0,227</td><td class="n">0,404</td><td class="n">−2,0%</td><td>Trượt G1</td></tr>
+<tr><td>lstm</td><td class="n">0,777</td><td class="n">0,767</td><td class="n">0,229</td><td class="n">0,411</td><td class="n">−3,2%</td><td>Trượt G1</td></tr>
+<tr><td>lstm_ft</td><td class="n">0,779</td><td class="n">0,766</td><td class="n">0,229</td><td class="n">0,409</td><td class="n">−2,4%</td><td>Trượt G1</td></tr>
+<tr><td>chronos2</td><td class="n">0,808</td><td class="n">0,790</td><td class="n">0,230</td><td class="n">0,375</td><td class="n">−14,2%</td><td>Trượt G1, G5</td></tr>
+<tr><td>tsb (baseline tốt nhất 2025)</td><td class="n">0,787</td><td class="n">0,789</td><td class="n">0,244</td><td class="n">0,421</td><td class="n">−4,6%</td><td></td></tr>
+</table></div>
+<p class="tbl-cap">Bảng 11.1. Chỉ chấm trên hai vòng backtest; tập test 2026 đã khóa cho mô hình chốt trước đó.</p>
+<div class="box verify"><span class="label">Kết luận RQ3 (deep learning)</span><p>Bốn kiến trúc mạng nơ-ron tốt hơn baseline mạnh nhất 1–4% RMSSE nhưng kém GBM 1–5% và không đạt tiêu chí "tốt hơn baseline ít nhất 5%"; CNN 1D tốt nhất trong nhóm. Chronos-2 zero-shot, không cần huấn luyện, có WAPE tốt nhất mọi mô hình (0,375) nhưng dự báo thiếu 14%: dự báo của nó gần trung vị, tối ưu sai số tuyệt đối chứ không tối ưu sai số bình phương. Với khoảng 400 chuỗi tuần, GBM vẫn là lựa chọn tốt nhất, và đã sát trần dự báo được.</p></div>
+<div class="box exercise"><span class="label">Bài tập</span><p>(1) Bỏ early stopping của MLP và đo lại RMSSE. (2) Đổi scheduler thành <code>OneCycleLR</code>. (3) Bỏ gradient clipping khi huấn luyện LSTM với lr 1e-2. (4) Đổi giãn CNN thành 1-1-1-1. (5) Thay đầu ra trực tiếp của LSTM bằng decoder sinh lần lượt 12 tuần. (6) Kết hợp 0,5 × gbm_dm + 0,5 × cnn1d và chạy quality gate.</p></div>
+</section>
+
+<div class="part-title">Phần IV · Đánh giá và quyết định</div>
+
+<section class="chapter" id="ch12">
+<h2><span class="num">Chương 12</span>Backtest, chỉ số và quality gate</h2>
+<p class="lede">Chia theo thời gian, chấm bằng chỉ số hợp với dữ liệu nhiều số 0, và viết tiêu chí nghiệm thu trước khi nhìn kết quả.</p>
+<figure class="img"><img src="fig/backtest_scheme.png" alt="Sơ đồ backtest cuốn mốc hai vòng và tập test" loading="lazy">
+<figcaption><b>Hình 12.1.</b> Hai vòng backtest (đánh giá 2024, 2025) và tập test 2026. Mỗi vòng 13 mốc cắt cách nhau 4 tuần, dự báo 1–12 tuần.</figcaption></figure>
+<h3>12.1. Chỉ số</h3>
+<div class="eq"><span class="m">RMSSE = √( mean<sub>eval</sub>(y − ŷ)² / mean<sub>hist</sub>(y<sub>t</sub> − y<sub>t−1</sub>)² ) ,&nbsp;&nbsp; WAPE = Σ|y − ŷ| / Σy ,&nbsp;&nbsp; Bias = (Σŷ − Σy) / Σy</span><span class="n">(12.1)</span></div>
+<p>RMSSE bằng 1 nghĩa là sai ngang dự báo naive một bước trên lịch sử. Thang đo chỉ tính trên lịch sử trước mốc huấn luyện. SPL là pinball trung bình trên bốn quantile, chuẩn hóa theo cùng cách. Tuần hết hàng bị loại khỏi mọi phép tính.</p>
+<figure class="code"><figcaption><span>src/metrics.py</span></figcaption><pre><code class="language-python">def history_scales(Y_hist: np.ndarray):
+    &quot;&quot;&quot;Thang đo theo từng chuỗi từ lịch sử (n x t, NaN = chưa hoạt động).
+
+    trả về (scale_sq cho RMSSE, scale_abs cho pinball chuẩn hóa).
+    &quot;&quot;&quot;
+    d = np.diff(Y_hist, axis=1)
+    with np.errstate(all=&quot;ignore&quot;):
+        sq = np.nanmean(d ** 2, axis=1)
+        ab = np.nanmean(np.abs(d), axis=1)
+    return sq, ab</code></pre></figure>
+<div class="box"><span class="label">Ví dụ tính tay</span><p>Lịch sử 0, 2, 0, 2, 0 cho scale<sub>sq</sub> = 4. Bốn tuần đánh giá y = 3, 1, 0, 4 với ŷ = 1, 3, 1, 2: RMSSE = √(13/4/4) = 0,90; WAPE = 7/8 = 0,875; Bias = −12,5%.</p></div>
+<h3>12.2. Quality gate</h3>
+<p>Sáu tiêu chí được viết trong code trước khi chạy mô hình: RMSSE tốt hơn baseline tốt nhất ít nhất 5% (G1); pinball chuẩn hóa tốt hơn (G2); coverage P90 trong [0,86; 0,94] (G3) và P95 trong [0,91; 0,98] (G4); |Bias| ≤ 5% (G5); không nhóm ABC nào kém baseline quá 5% (G6). Phải đạt ở cả hai vòng.</p>
+<figure class="code"><figcaption><span>src/backtest.py</span></figcaption><pre><code class="language-python">def quality_gate(overall: pd.DataFrame, by_abc: pd.DataFrame, candidate: str) -&gt; dict:
+    base = overall[overall.model.isin(BASELINE_MODELS)].sort_values(&quot;RMSSE&quot;).iloc[0]
+    m = overall.set_index(&quot;model&quot;).loc[candidate]
+    res = {k: bool(f(m, base)) for k, f in GATES.items()}
+    ab = by_abc.pivot(index=&quot;seg_abc&quot;, columns=&quot;model&quot;, values=&quot;RMSSE&quot;)
+    worse = (ab[candidate] / ab[base.model] - 1).round(3).to_dict()
+    res[&quot;G6 Không nhóm ABC nào kém baseline &gt; 5%&quot;] = bool(max(worse.values()) &lt;= .05)
+    return {&quot;candidate&quot;: candidate, &quot;best_baseline&quot;: base.model, &quot;gates&quot;: res,
+            &quot;rmsse_change_by_abc&quot;: worse, &quot;passed&quot;: all(res.values())}</code></pre></figure>
+<div class="box pitfall"><span class="label">Cạm bẫy: đo trần trước khi hứa KPI</span><p>Trên phiên bản dữ liệu đầu, oracle biết đúng mức kỳ vọng đạt RMSSE 0,758, mô hình tốt nhất 0,755: đã chạm trần, G1 không thể đạt. Với dữ liệu thật, ước lượng sàn bằng √(mean μ / scale<sub>sq</sub>) khi nhu cầu xấp xỉ Poisson, trước khi cam kết với doanh nghiệp.</p></div>
+<h3>12.3. Kết quả</h3>
+<div class="tbl"><table>
+<tr><th>Mô hình</th><th class="n">RMSSE 2024</th><th class="n">RMSSE 2025</th><th class="n">SPL 2025</th><th class="n">Bias 2025</th><th class="n">Cov P90 2025</th></tr>
+<tr class="hl"><td>gbm_dm</td><td class="n">0,741</td><td class="n">0,747</td><td class="n">0,221</td><td class="n">−2,2%</td><td class="n">0,891</td></tr>
+<tr><td>gbm_base</td><td class="n">0,741</td><td class="n">0,749</td><td class="n">0,224</td><td class="n">−2,5%</td><td class="n">0,892</td></tr>
+<tr><td>gbm_dm_ext</td><td class="n">0,745</td><td class="n">0,749</td><td class="n">0,221</td><td class="n">−2,6%</td><td class="n">0,892</td></tr>
+<tr><td>tsb</td><td class="n">0,787</td><td class="n">0,789</td><td class="n">0,244</td><td class="n">−4,6%</td><td class="n">0,907</td></tr>
+<tr><td>croston_sba</td><td class="n">0,787</td><td class="n">0,792</td><td class="n">0,242</td><td class="n">−8,6%</td><td class="n">0,908</td></tr>
+<tr><td>ses</td><td class="n">0,809</td><td class="n">0,794</td><td class="n">0,245</td><td class="n">−4,7%</td><td class="n">0,907</td></tr>
+<tr><td>snaive</td><td class="n">1,071</td><td class="n">1,074</td><td class="n">0,297</td><td class="n">−10,8%</td><td class="n">0,910</td></tr>
+</table></div>
+<p class="tbl-cap">Bảng 12.1. Kết quả hai vòng backtest (350 và 364 chuỗi). <code>gbm_dm</code> qua cả sáu gate ở cả hai vòng: RMSSE tốt hơn baseline tốt nhất 5,8% và 5,3%, SPL tốt hơn 9,1% và 9,4%.</p>
+<figure class="img"><img src="fig/eb_segments.png" alt="RMSSE theo kiểu nhu cầu SBC" loading="lazy">
+<figcaption><b>Hình 12.2.</b> RMSSE theo kiểu nhu cầu, vòng 2. Lợi ích tập trung ở mã bán đều; với mã gộp cục, Croston nhỉnh hơn và GBM dự báo thừa 32%.</figcaption></figure>
+<figure class="img"><img src="fig/forecast_examples.png" alt="Dự báo 1–4 tuần của hai SKU với dải P50–P90" loading="lazy">
+<figcaption><b>Hình 12.3.</b> Dự báo 1–4 tuần tại mỗi mốc cắt năm 2025 cho một mã bán đều và một mã gộp cục, so với Croston-SBA. Chấm đỏ là tuần hết hàng.</figcaption></figure>
+<div class="box verify"><span class="label">Kiểm chứng</span><p>Quanh Tết (±2 tuần), GBM đạt RMSSE 0,599 so với 0,842 của Croston, vốn dự báo thừa 43% đúng lúc kho cần tồn thấp nhất. Bootstrap theo cặp trên SKU: chênh lệch RMSSE −0,046, khoảng tin cậy 95% [−0,054; −0,037], 74% số SKU tốt hơn.</p></div>
+<h3>12.4. Ablation: trả lời RQ4 và RQ2</h3>
+<div class="tbl"><table>
+<tr><th>So sánh</th><th class="n">ΔRMSSE 2024 (KTC 95%)</th><th class="n">ΔRMSSE 2025 (KTC 95%)</th><th>Kết luận</th></tr>
+<tr><td>+ nhãn khai phá (RQ4)</td><td class="n">−0,0002 [−0,0023; +0,0017]</td><td class="n">−0,0025 [−0,0041; −0,0009]</td><td>Không nhất quán, rất nhỏ</td></tr>
+<tr><td>+ biến ngoài (RQ2)</td><td class="n">+0,0039 [+0,0019; +0,0059]</td><td class="n">+0,0020 [+0,0012; +0,0028]</td><td>Làm kém đi</td></tr>
+</table></div>
+<p>Giá trị của khai phá dữ liệu nằm ở làm sạch (đơn dự án, ghép mã, cờ hết hàng) và ở phân khúc để đánh giá và đặt mức phục vụ, không nằm ở việc thêm nhãn làm đặc trưng: boosting đã tự học được thông tin đó từ lag và trung bình trượt.</p>
+</section>
+
+<section class="chapter" id="ch13">
+<h2><span class="num">Chương 13</span>Mô phỏng tồn kho</h2>
+<p class="lede">Đổi sai số dự báo thành vốn tồn và mức phục vụ, trên cùng nhu cầu và cùng thời gian chờ ngẫu nhiên cho mọi chính sách.</p>
+<h3>13.1. Cửa sổ bảo vệ</h3>
+<p>Chính sách xem xét hằng tuần (R = 1) đặt hàng lên mức S, là quantile mức α của tổng nhu cầu trong cửa sổ bảo vệ. Sách giáo khoa viết cửa sổ là L + R. Trong mô hình thời gian rời rạc phải đếm cẩn thận:</p>
+<figure class="svgfig"><div class="wrap">
+<svg viewBox="0 0 900 190" role="img" aria-label="Cửa sổ bảo vệ L cộng R trừ 1 tuần">
+<defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<g>
+<rect class="d-box" x="60" y="70" width="150" height="40"/><text class="d-l" x="135" y="95" text-anchor="middle">tuần o</text>
+<rect class="d-acc" x="210" y="70" width="150" height="40"/><text class="d-l" x="285" y="95" text-anchor="middle">tuần o+1</text>
+<rect class="d-acc" x="360" y="70" width="150" height="40"/><text class="d-l" x="435" y="95" text-anchor="middle">tuần o+2</text>
+<rect class="d-box" x="510" y="70" width="150" height="40"/><text class="d-l" x="585" y="95" text-anchor="middle">tuần o+3</text>
+<rect class="d-box" x="660" y="70" width="150" height="40"/><text class="d-l" x="735" y="95" text-anchor="middle">tuần o+4</text>
+<path class="d-line" d="M208,60 C260,20 330,20 360,62" marker-end="url(#ah3)"/>
+<text class="d-t" x="205" y="40" text-anchor="end">đặt cuối tuần o</text>
+<text class="d-l" x="370" y="40">về đầu tuần o+2 (L = 2)</text>
+<path class="d-line" d="M358,118 C410,160 480,160 510,120" marker-end="url(#ah3)"/>
+<text class="d-l" x="520" y="160">lần đặt kế tiếp (cuối tuần o+1) về đầu tuần o+3</text>
+<path class="d-axis" d="M212,130 V142 H508 V130"/>
+<text class="d-t" x="360" y="182" text-anchor="middle">cửa sổ bảo vệ = L + R − 1 = 2 tuần</text>
+</g></svg></div>
+<figcaption><b>Hình 13.1.</b> Hàng đặt cuối tuần o về đầu tuần o+L và bán ngay; lô kế tiếp về đầu tuần o+L+R. Mức S chỉ cần phủ L + R − 1 tuần nhu cầu.</figcaption></figure>
+<figure class="code"><figcaption><span>src/inventory_sim.py</span></figcaption><pre><code class="language-python"># Cửa sổ bảo vệ: đặt cuối tuần o, hàng về đầu tuần o+L, đơn kế tiếp về đầu tuần o+L+R. Đơn này
+# phải phủ nhu cầu các tuần o+1 .. o+L+R-1, tức L+R-1 tuần (= L khi R = 1).
+H = np.array([nominal.get(s, 4) for s in sup]) + C.REVIEW_WEEKS - 1</code></pre></figure>
+<p>Test khóa lại cách đếm đúng: nhu cầu cố định 10 cái/tuần, chờ 2 tuần, thì S = 20 vừa đủ, không thiếu cũng không thừa.</p>
+<figure class="code"><figcaption><span>tests/test_inventory_sim.py</span></figcaption><pre><code class="language-python">def test_order_up_to_L_weeks_is_exactly_enough():
+    # Nhu cầu 10/tuần, chờ 2 tuần: S = 20 đủ phục vụ hết và không để tồn thừa sau giai đoạn đầu.
+    rec = _run(20, L=2)
+    assert rec[&quot;lost&quot;].sum() == 0
+    assert np.all(rec[&quot;on_hand&quot;][0, 2:] == 0)</code></pre></figure>
+<div class="box pitfall"><span class="label">Cạm bẫy</span><p>Cộng quantile từng tuần thay vì lấy quantile của tổng: với μ = 10, σ = 5 và 4 tuần, cộng P95 cho 72,9, còn P95 của tổng là 56,5, tức tồn thừa 29%. Lab dự báo trực tiếp tổng nhu cầu trong cửa sổ.</p></div>
+<h3>13.2. Vòng lặp mô phỏng</h3>
+<figure class="code"><figcaption><span>src/inventory_sim.py</span></figcaption><pre><code class="language-python">def simulate(S_levels: np.ndarray, D: np.ndarray, on_hand0: np.ndarray, lead: np.ndarray, pack, moq,
+             pipeline: np.ndarray):
+    &quot;&quot;&quot;Mô phỏng tuần: cuối tuần k đặt hàng lên S, hàng về đầu tuần k+lead, bán trong tuần.
+
+    pipeline[i, k] = hàng của các PO ĐÃ ĐẶT trước mốc cắt sẽ về tuần k (chung cho mọi chính sách).
+    &quot;&quot;&quot;
+    n, W = D.shape
+    on_hand = on_hand0.astype(float).copy()
+    arrivals = np.zeros((n, W + 80))
+    arrivals[:, :W] += pipeline
+    on_order = pipeline.sum(1)
+    rec = {k: np.zeros((n, W)) for k in (&quot;on_hand&quot;, &quot;sales&quot;, &quot;lost&quot;, &quot;orders&quot;)}
+    for k in range(W):
+        S = S_levels[:, k]
+        q = np.maximum(S - on_hand - on_order, 0)
+        q = np.where(q &gt; 0, np.maximum(np.ceil(q / pack) * pack, moq), 0)
+        np.add.at(arrivals, (np.arange(n), k + lead[:, k] - 1), q)  # lead=1: về ngay đầu tuần kế tiếp
+        on_order += q
+        rec[&quot;orders&quot;][:, k] = q &gt; 0
+        on_hand += arrivals[:, k]
+        on_order -= arrivals[:, k]
+        d = D[:, k]
+        sales = np.minimum(d, on_hand)
+        on_hand -= sales
+        rec[&quot;sales&quot;][:, k], rec[&quot;lost&quot;][:, k], rec[&quot;on_hand&quot;][:, k] = sales, d - sales, on_hand
+    return rec</code></pre></figure>
+<h3>13.3. Dò α trên năm validation</h3>
+<p>α không bằng mức phục vụ theo tuần, vì có MOQ, quy cách, đường ống hàng và rủi ro nhà cung cấp giao trễ. Vì vậy α được dò theo từng nhóm ABC bằng mô phỏng trên năm 2025: chọn α nhỏ nhất vẫn đạt mục tiêu, rồi khóa cho năm test.</p>
+<figure class="img"><img src="fig/eb_tradeoff.png" alt="Đường cong vốn tồn và mức phục vụ nhóm A" loading="lazy">
+<figcaption><b>Hình 13.2.</b> Đường cong đánh đổi của nhóm A trên năm 2025; vòng tròn là α được chọn. Ở cùng mức phục vụ 98–99%, GBM + conformal tốn 9,9 tỷ so với 10,8 tỷ của baseline; quantile GBM thô không đạt 98% ngay cả với α = 0,995.</figcaption></figure>
+<h3>13.4. Kết quả trên năm test 2026</h3>
+<figure class="img"><img src="fig/eb_policy_results.png" alt="Vốn tồn và mức phục vụ của bốn chính sách năm 2026" loading="lazy">
+<figcaption><b>Hình 13.3.</b> Bốn chính sách trên năm test 2026, α khóa từ 2025. Chính sách (d) được chọn trên năm 2025 vì là chính sách rẻ nhất đạt cả ba mục tiêu.</figcaption></figure>
+<div class="box verify"><span class="label">Kết luận RQ5</span><p>Chính sách đặt hàng theo dự báo quantile (GBM + conformal) giảm <strong>16,5% vốn tồn bình quân</strong> so với thực tế (12,2 so với 14,7 tỷ đồng, giá đã nhân hệ số) và nâng mức phục vụ nhóm A từ 95,7% lên 99,2%. Nhóm C đạt mục tiêu (91,9%). <strong>Nhóm B đạt 93,2%, thiếu 1,8 điểm so với mục tiêu 95%</strong>, vì α của nhóm B được chọn sát biên trên năm 2025. Baseline rẻ hơn 7% nhưng trượt mục tiêu cả nhóm A lẫn B.</p></div>
+<p>Hai bài học. Thứ nhất, phần lớn giá trị đến từ việc có chính sách định lượng: chỉ riêng quantile + mô phỏng với một baseline đơn giản đã giảm 22% vốn tồn. Mô hình tốt hơn chủ yếu giúp đạt mức phục vụ nhóm A với chi phí thấp hơn. Thứ hai, không đổi lựa chọn sau khi nhìn test: chính sách (c) rẻ nhất trên 2026 nhưng đã trượt nhóm A trên 2025. Vòng sau, khi dò α cần đòi biên an toàn, ví dụ mục tiêu cộng 1 điểm.</p>
+</section>
+
+<section class="chapter" id="ch14">
+<h2><span class="num">Chương 14</span>Test một lần</h2>
+<p class="lede">Mỗi lần nhìn kết quả test rồi quay lại sửa mô hình, tập test biến thành tập validation.</p>
+<h3>14.1. Khóa tập test</h3>
+<figure class="code"><figcaption><span>src/final_test.py</span></figcaption><pre><code class="language-python">if LOCK.exists() and not a.reopen_reason:
+    print(LOCK.read_text())
+    raise SystemExit(&quot;Tập test đã mở. Muốn mở lại phải ghi --reopen-reason và báo cáo việc này.&quot;)
+gate_file = C.OUTPUTS / &quot;quality_gate.json&quot;
+if not gate_file.exists():
+    raise SystemExit(&quot;Chưa có quality_gate.json. Chạy backtest trước.&quot;)
+gates = json.loads(gate_file.read_text())
+if not all(g[&quot;passed&quot;] and g[&quot;candidate&quot;] == a.candidate for g in gates.values()):
+    raise SystemExit(f&quot;{a.candidate} chưa đạt quality gate trên mọi vòng backtest: không được mở test.&quot;)</code></pre></figure>
+<p>Khóa nằm ở <code>audit/test_lock.json</code>, ngoài thư mục kết quả, và được commit. Nhật ký của lab ghi ba lần mở, mỗi lần có lý do:</p>
+<div class="tbl"><table>
+<tr><th class="n">Lần</th><th>Lý do</th><th>Thay đổi</th></tr>
+<tr><td class="n">1</td><td>Mở lần đầu</td><td>Lỗi: α của chính sách đặt hàng bị dò ngay trên năm test</td></tr>
+<tr><td class="n">2</td><td>Sửa lỗi dò α trên test</td><td>Chỉ phần mô phỏng thay đổi</td></tr>
+<tr><td class="n">3</td><td>Sửa bốn lỗi do review độc lập tìm ra: cửa sổ bảo vệ thừa một tuần, cờ hết hàng bỏ sót, rò rỉ nhãn trong CQR, chuỗi ngừng kinh doanh bị cắt sớm</td><td>Dữ liệu dựng lại; RMSSE test 0,716 → 0,714; mô phỏng thay đổi lớn</td></tr>
+</table></div>
+<p>Ở lần mở thứ ba, lệnh dựng lại pipeline từ đầu còn xóa mất file khóa cũ nằm trong <code>outputs/</code>. Hai bản ghi trước được khôi phục từ nhật ký phiên làm việc và khóa được chuyển sang <code>audit/</code>. Không xóa dấu vết, mà ghi rõ đã mở lại, vì sao, và kết quả nào thay đổi: đó là mục đích của cơ chế khóa.</p>
+<div class="box verify"><span class="label">Kiểm chứng trên test 2026</span><p><code>gbm_dm</code>: RMSSE 0,714 so với 0,772 của Croston-SBA (tốt hơn 7,5%), SPL tốt hơn 11,2%, Bias +0,9%, coverage P90 0,911, P95 0,954. Quality gate ĐẠT cả sáu tiêu chí. Theo nhóm ABC: A −14,2%, B −8,8%, C −3,4%.</p></div>
+<p>Sau khi tập test đã khóa, mô hình chốt được đưa vào vận hành: Chương 15.</p>
+</section>
+
+<section class="chapter" id="ch15">
+<h2><span class="num">Chương 15</span>Triển khai và giám sát</h2>
+<p class="lede">Bốn phần biến mô hình đã nghiệm thu thành hệ thống chạy mỗi sáng thứ Hai: đóng gói, dự báo và đề xuất, dashboard duyệt, giám sát. Code ở thư mục <code>deploy/</code>.</p>
+<div class="tbl"><table>
+<tr><th>Phần</th><th>Script</th><th>Đầu ra</th></tr>
+<tr><td>1. Đóng gói mô hình</td><td><code>train_final.py</code></td><td><code>models/registry/&lt;tag&gt;/bundle.joblib</code>, <code>metadata.json</code>, <code>CURRENT</code></td></tr>
+<tr><td>2. Chạy hằng tuần</td><td><code>predict_weekly.py</code></td><td><code>runs/&lt;thứ Hai&gt;/forecast.parquet</code>, <code>order_proposal.csv</code>, <code>run_log.json</code></td></tr>
+<tr><td>3. Dashboard</td><td><code>dashboard.py</code> (Streamlit)</td><td><code>order_proposal_approved.csv</code></td></tr>
+<tr><td>4. Giám sát</td><td><code>monitor.py</code></td><td><code>monitor_weekly.csv</code>, <code>alerts.json</code>, <code>monitor.png</code></td></tr>
+</table></div>
+<p>Phần triển khai không có logic mô hình riêng: nó gọi lại đúng <code>features_at</code>, <code>labels_at</code>, mô hình GBM và mô hình tổng nhu cầu của các chương trước, nên thứ chạy hằng tuần giống hệt thứ đã backtest.</p>
+<h3>15.1. Gói mô hình có phiên bản</h3>
+<p><code>train_final.py</code> chỉ đóng gói khi dữ liệu không có lỗi FAIL và <code>gbm_dm</code> đạt quality gate ở cả hai vòng. Gói chứa mô hình dự báo (mean + 4 quantile), mô hình tổng nhu cầu cửa sổ bảo vệ với hiệu chỉnh CQR cho ba mức α đã dò trên 2025, bảng conformal của Croston-SBA cho dự phòng, phân phối tham chiếu để đo trôi dữ liệu, và một model card. Gói production <code>gbm_dm_20261102</code> nặng 2,8 MB, đóng gói trong 84 giây.</p>
+<figure class="code"><figcaption><span>deploy/core.py</span></figcaption><pre><code class="language-python">def load_package(tag: str | None = None) -&gt; tuple[dict, dict]:
+    tag = resolve_tag(tag)
+    d = REGISTRY / tag
+    meta = json.loads((d / &quot;metadata.json&quot;).read_text())
+    if file_md5(d / &quot;bundle.joblib&quot;) != meta[&quot;bundle_md5&quot;]:
+        raise RuntimeError(f&quot;bundle.joblib của {tag} không khớp md5 trong metadata: gói đã bị sửa hoặc hỏng&quot;)
+    return joblib.load(d / &quot;bundle.joblib&quot;), meta</code></pre></figure>
+<figure class="code"><figcaption><span>deploy/core.py</span></figcaption><pre><code class="language-python">def promote(tag: str, reason: str) -&gt; None:
+    REGISTRY.mkdir(parents=True, exist_ok=True)
+    prev = CURRENT.read_text().strip() if CURRENT.exists() else None
+    CURRENT.write_text(tag)
+    with open(REGISTRY / &quot;promotions.jsonl&quot;, &quot;a&quot;) as f:
+        f.write(json.dumps({&quot;at&quot;: datetime.now().isoformat(timespec=&quot;seconds&quot;), &quot;from&quot;: prev, &quot;to&quot;: tag,
+                            &quot;reason&quot;: reason}, ensure_ascii=False) + &quot;\n&quot;)</code></pre></figure>
+<p>Mọi gói mới được tạo không kèm <code>--promote</code>, chạy bóng vài tuần, rồi mới ghi vào <code>CURRENT</code>. Quay lui chỉ là ghi lại tên gói cũ.</p>
+<h3>15.2. Chạy hằng tuần và bảng đề xuất</h3>
+<p>Với mốc cắt là tuần đầy đủ cuối, <code>predict_weekly.py</code> kiểm tra dữ liệu, từ chối gói học sau mốc cắt, dự báo 1–12 tuần bằng mô hình chính kèm Croston chạy bóng, tính tồn và hàng đang về tại Chủ nhật, mức S theo nhóm ABC, rồi lượng đặt.</p>
+<figure class="code"><figcaption><span>deploy/predict_weekly.py</span></figcaption><pre><code class="language-python">def forecast_at(p, o, bundle, force_fallback=False):
+    &quot;&quot;&quot;Dự báo 1–12 tuần tại mốc cắt o; luôn kèm Croston-SBA làm bóng/dự phòng.&quot;&quot;&quot;
+    hs = list(range(1, C.HORIZON + 1))
+    f = features_at(p, o, hs, labels_at(p, o))
+    f = f[f.active].reset_index(drop=True)
+    sbc = labels_at(p, o).set_index(&quot;unique_id&quot;).sbc
+    pf = B.point_forecasts(p.Y, o, C.HORIZON)[core.FALLBACK_MODEL]
+    sh = pd.DataFrame({&quot;unique_id&quot;: np.repeat(p.ids, C.HORIZON), &quot;origin&quot;: o,
+                       &quot;h&quot;: np.tile(np.arange(1, C.HORIZON + 1), len(p.ids)), &quot;mean&quot;: pf.ravel(),
+                       &quot;model&quot;: core.FALLBACK_MODEL})
+    sh = f[[&quot;unique_id&quot;, &quot;origin&quot;, &quot;h&quot;, &quot;scale&quot;]].merge(sh, on=[&quot;unique_id&quot;, &quot;origin&quot;, &quot;h&quot;])
+    sh[&quot;sbc&quot;] = sh.unique_id.map(sbc)
+    sh = B.apply_conformal(sh, bundle[&quot;fallback_table&quot;], C.QUANTILES)
+    out = f[[&quot;unique_id&quot;, &quot;origin&quot;, &quot;h&quot;, &quot;ds&quot;, &quot;scale&quot;, &quot;n_obs&quot;]].copy()
+    out[[&quot;shadow_mean&quot;] + [f&quot;shadow_{c}&quot; for c in QCOLS]] = sh[[&quot;mean&quot;] + QCOLS].to_numpy()
+    source = &quot;gbm_dm&quot;
+    try:
+        if force_fallback:
+            raise RuntimeError(&quot;diễn tập dự phòng (--force-fallback)&quot;)
+        pr = G.predict(bundle[&quot;forecast_models&quot;], f, bundle[&quot;features&quot;], bundle[&quot;quantiles&quot;])
+        out[[&quot;mean&quot;] + QCOLS] = pr[[&quot;mean&quot;] + QCOLS].to_numpy()
+        error = None
+    except Exception as e:  # mô hình chính hỏng -&gt; dùng Croston-SBA, gắn cờ
+        out[[&quot;mean&quot;] + QCOLS] = out[[&quot;shadow_mean&quot;] + [f&quot;shadow_{c}&quot; for c in QCOLS]].to_numpy()
+        source, error = core.FALLBACK_MODEL, repr(e)
+    young = out.n_obs &lt; 13   # mã mới: mô hình không được huấn luyện cho trường hợp này
+    out.loc[young, [&quot;mean&quot;] + QCOLS] = out.loc[young, [&quot;shadow_mean&quot;] + [f&quot;shadow_{c}&quot; for c in QCOLS]].to_numpy()
+    out[&quot;model_source&quot;] = np.where(young, f&quot;{core.FALLBACK_MODEL} (mã mới)&quot;, source)
+    return out, f, source, error</code></pre></figure>
+<p>Hàng đang về tính theo <strong>số lượng đặt</strong> của PO chưa nhận, vì đó là thứ người mua biết vào sáng thứ Hai; lượng thực nhận (có thể giao thiếu) chỉ biết khi hàng về.</p>
+<figure class="code"><figcaption><span>deploy/core.py</span></figcaption><pre><code class="language-python">def open_orders_asof(po: pd.DataFrame, ids, umap: pd.Series, date: pd.Timestamp) -&gt; np.ndarray:
+    &quot;&quot;&quot;Hàng đang về: PO thường đã đặt trước `date` mà chưa nhận tại `date`, tính theo số lượng ĐẶT.
+
+    Người mua hàng chỉ biết số lượng đặt; số lượng thực nhận (có thể giao thiếu) chỉ biết khi hàng về.
+    &quot;&quot;&quot;
+    d = pd.Timestamp(date)
+    o = po[(po.po_type == &quot;THUONG&quot;) &amp; (po.order_date &lt;= d) &amp; (po.received_date.isna() | (po.received_date &gt; d))]
+    s = o.groupby(o.item_code.map(umap)).qty_ordered.sum()
+    return s.reindex(ids).fillna(0).to_numpy(float)</code></pre></figure>
+<figure class="code"><figcaption><span>deploy/core.py</span></figcaption><pre><code class="language-python">def order_quantity(S, on_hand, on_order, pack, moq, allowed) -&gt; np.ndarray:
+    &quot;&quot;&quot;Lượng đặt = max(S - tồn - hàng đang về, 0), làm tròn lên theo quy cách, tối thiểu MOQ; 0 nếu không được đặt.&quot;&quot;&quot;
+    q = np.maximum(np.asarray(S, float) - np.asarray(on_hand, float) - np.asarray(on_order, float), 0)
+    q = np.where(q &gt; 0, np.maximum(np.ceil(q / pack) * pack, moq), 0)
+    return np.where(allowed, q, 0).astype(int)</code></pre></figure>
+<div class="box"><span class="label">Ví dụ đề xuất 09/11/2026</span><p>OCAM-0041 (nhóm A): tồn 960 + đang về 0 = 960; mức S 3.097 phủ 10 tuần (α 0,995) → đặt 2.140, làm tròn quy cách 10/MOQ 20. CAP-0047 (nhóm C): tồn 9; mức S 0 phủ 2 tuần (α 0,6) → đủ hàng. Lần chạy này có 382 chuỗi, 184 dòng đề xuất, khoảng 14,4 tỷ đồng.</p></div>
+<h3>15.3. Dashboard cho người mua</h3>
+<figure class="img"><img src="fig/deploy_dashboard_proposal.png" alt="Dashboard: trang đề xuất đặt hàng" loading="lazy">
+<figcaption><b>Hình 15.1.</b> Trang đề xuất: bốn chỉ số, bộ lọc, bảng đề xuất trong đó chỉ "Lượng duyệt" và "Ghi chú" sửa được; nút lưu bản duyệt yêu cầu tên người duyệt.</figcaption></figure>
+<figure class="img"><img src="fig/deploy_dashboard_sku.png" alt="Dashboard: tra cứu SKU" loading="lazy">
+<figcaption><b>Hình 15.2.</b> Tra cứu SKU: lý do đề xuất bằng lời, hai năm lịch sử (chấm đỏ là tuần hết hàng) nối với dự báo 12 tuần có dải P50–P90 và P98.</figcaption></figure>
+<p>Diễn tập quy trình duyệt tìm ra một lỗi điển hình của giao diện có bộ nhớ đệm: cache khóa theo tên lần chạy nên không thấy bản duyệt mới, và bấm "Lưu" ghi đè mất các dòng người khác đã sửa. Cách sửa là đưa thời điểm sửa file duyệt vào khóa cache:</p>
+<figure class="code"><figcaption><span>deploy/dashboard.py</span></figcaption><pre><code class="language-python">@st.cache_data
+def load_run(run: str, approved_mtime: float):
+    &quot;&quot;&quot;approved_mtime nằm trong khóa cache: ai đó lưu bản duyệt mới thì dashboard đọc lại, không ghi đè bản cũ.&quot;&quot;&quot;
+    d = core.RUNS / run
+    prop = pd.read_csv(d / &quot;order_proposal.csv&quot;, dtype={&quot;ghi_chu&quot;: str}).fillna({&quot;ghi_chu&quot;: &quot;&quot;})
+    approved = d / &quot;order_proposal_approved.csv&quot;
+    if approved.exists():   # đã có bản duyệt: nạp lại để người mua làm tiếp
+        prev = pd.read_csv(approved, dtype={&quot;ghi_chu&quot;: str}).fillna({&quot;ghi_chu&quot;: &quot;&quot;})
+        prop = prop.drop(columns=EDITABLE).merge(prev[[&quot;unique_id&quot;] + EDITABLE], on=&quot;unique_id&quot;, how=&quot;left&quot;)
+    return prop, pd.read_parquet(d / &quot;forecast.parquet&quot;), json.loads((d / &quot;run_log.json&quot;).read_text())</code></pre></figure>
+<h3>15.4. Giám sát và cảnh báo</h3>
+<p><code>monitor.py</code> lấy các tuần mục tiêu đã có thực tế của mỗi lần chạy và chấm cả mô hình chính lẫn Croston chạy bóng bằng đúng hàm <code>metrics.evaluate</code> của backtest; thêm trôi dữ liệu (PSI), khối lượng dữ liệu, đột biến giá trị đặt, mức phục vụ thực tế, tỷ lệ đề xuất bị sửa, tuổi mô hình. Cảnh báo CRITICAL làm script thoát mã 2 để lịch chạy tự động gọi người trực.</p>
+<div class="eq"><span class="m">PSI = Σ<sub>k</sub> (p<sub>k</sub> − q<sub>k</sub>) · ln(p<sub>k</sub> / q<sub>k</sub>)</span><span class="n">(15.1)</span></div>
+<figure class="code"><figcaption><span>deploy/core.py</span></figcaption><pre><code class="language-python">def psi(ref: dict, x: np.ndarray) -&gt; float:
+    &quot;&quot;&quot;Population Stability Index: Σ (p − q) · ln(p / q). &lt; 0,1 ổn định; 0,1–0,2 cần để ý; &gt; 0,2 trôi đáng kể.&quot;&quot;&quot;
+    edges, q = np.array(ref[&quot;edges&quot;]), np.array(ref[&quot;frac&quot;])
+    x = x[np.isfinite(x)]
+    p = np.histogram(np.clip(x, edges[0], edges[-1]), edges)[0] / max(len(x), 1)
+    p, q = np.clip(p, 1e-4, None), np.clip(q, 1e-4, None)
+    return float(np.sum((p - q) * np.log(p / q)))</code></pre></figure>
+<div class="tbl"><table>
+<tr><th>Cảnh báo</th><th>Mức</th><th>Điều kiện</th></tr>
+<tr><td>MODEL_WORSE_THAN_FALLBACK</td><td>CRITICAL</td><td>RMSSE mô hình kém Croston bóng 2 lần chạy liên tiếp</td></tr>
+<tr><td>FALLBACK_ACTIVE</td><td>CRITICAL</td><td>Lần chạy gần nhất dùng dự phòng</td></tr>
+<tr><td>COVERAGE_P90, BIAS</td><td>WARN</td><td>13 lần chạy: coverage ngoài [0,85; 0,95], |Bias| &gt; 10%</td></tr>
+<tr><td>DATA_DRIFT</td><td>WARN</td><td>PSI &gt; 0,2 ở 4 lần chạy liên tiếp (một tuần cao lẻ là mùa vụ)</td></tr>
+<tr><td>DATA_VOLUME, ORDER_VALUE_SPIKE</td><td>WARN</td><td>Dòng đơn lệch &gt; 40%; giá trị đặt &gt; 2 lần trung vị</td></tr>
+<tr><td>SERVICE_A/B/C, EDIT_RATE</td><td>WARN</td><td>Mức phục vụ 4 tuần dưới mục tiêu; người mua sửa &gt; 30%</td></tr>
+<tr><td>RETRAIN_DUE</td><td>INFO</td><td>Gói học đến hơn 13 tuần trước</td></tr>
+</table></div>
+<figure class="img"><img src="fig/deploy_monitor.png" alt="RMSSE và coverage P90 theo lần chạy bóng" loading="lazy">
+<figcaption><b>Hình 15.3.</b> Mười tám lần chạy bóng (gói học đến 29/06/2026, đề xuất từ 06/07 đến 02/11/2026): mô hình (xanh) tốt hơn Croston chạy bóng (cam) ở mọi lần; coverage P90 nằm trong dải chấp nhận.</figcaption></figure>
+<figure class="img"><img src="fig/deploy_dashboard_health.png" alt="Dashboard: sức khỏe hệ thống" loading="lazy">
+<figcaption><b>Hình 15.4.</b> Trang sức khỏe hệ thống với bốn cảnh báo đang mở.</figcaption></figure>
+<div class="box verify"><span class="label">Kết quả vận hành</span><p>Chạy bóng 18 tuần: RMSSE mô hình 0,600–0,743 so với 0,634–0,813 của Croston; coverage P90 0,894–0,925; Bias −1,4% đến −8,3%. Diễn tập dự phòng: Croston đề xuất 72 dòng, 10,9 tỷ so với 57 dòng, 4,3 tỷ của mô hình chính cùng tuần. Diễn tập duyệt: người mua sửa 3 dòng có ghi lý do, tỷ lệ sửa 1,6%.</p></div>
+<div class="box pitfall"><span class="label">Giám sát bắt được lỗi dữ liệu</span><p>Lần chạy production 09/11/2026 có bốn cảnh báo: giá trị đề xuất gấp 2,4 lần bình thường, và mức phục vụ 4 tuần gần nhất dưới mục tiêu ở cả ba nhóm. Truy nguyên: bộ sinh dữ liệu giả lập để người mua hàng ngừng đặt hàng cho NCC thời gian chờ dài trong khoảng 16 tuần cuối, nên tuần cuối chỉ còn 57 PO đang mở thay vì khoảng 350. Hệ thống phản ứng đúng (đề xuất bù đường ống hàng) và cảnh báo buộc người mua đối chiếu với ERP trước khi duyệt. Lỗi chỉ ảnh hưởng 2–3 tháng cuối dữ liệu và làm con số "giảm 16,5% vốn tồn" ở Chương 13 thành ước lượng thận trọng.</p></div>
+<h3>15.5. Sổ tay vận hành</h3>
+<div class="tbl"><table>
+<tr><th>Khi</th><th>Làm</th></tr>
+<tr><td>Dữ liệu tuần mới có FAIL</td><td>Không sinh đề xuất; báo người trực dữ liệu; dùng đề xuất tuần trước</td></tr>
+<tr><td>Monitor thoát mã 2</td><td>Đọc <code>alerts.json</code>; chạy <code>--force-fallback</code> cho tuần tới nếu mô hình kém Croston</td></tr>
+<tr><td>Đến hạn huấn luyện lại</td><td><code>train_final.py</code> không promote → chạy bóng 4–8 tuần → promote</td></tr>
+<tr><td>Gói mới chạy kém</td><td>Ghi tên gói cũ vào <code>CURRENT</code>, ghi lý do</td></tr>
+<tr><td>Người mua sửa nhiều</td><td>Đọc ghi chú; biến thông tin trong ghi chú thành đặc trưng hoặc quy tắc</td></tr>
+</table></div>
+<p>Để chạy trong doanh nghiệp thật còn cần lịch chạy tự động (cron, Airflow), job trích xuất SQL Server có ẩn danh, kho lưu gói mô hình có phân quyền, đăng nhập dashboard, ghi bản duyệt vào ERP qua API, và ít nhất 8 tuần chạy bóng trên dữ liệu thật.</p>
+</section>
+
+<div class="part-title">Phụ lục</div>
+
+<section class="chapter" id="appA">
+<h2><span class="num">Phụ lục A</span>Lệnh chạy và bài tập theo vai trò</h2>
+<pre class="shell"><code>cd DataMining/Work/erp-demand-lab
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -r requirements.txt
+python3 run_pipeline.py all            # seed → quality → clean → verify → mine → backtest → plots → simulate
+python3 -m pytest -q tests             # 20 test
+python3 run_pipeline.py dl             # deep learning + Chronos-2 (môn AI), 2 vòng backtest
+python3 src/ebook_figures.py           # hình của cuốn sách này
+python3 src/build_ebook.py             # dựng lại sách, code lấy từ mã nguồn
+python3 run_pipeline.py deploy-shadow-train deploy-shadow deploy-train deploy-predict monitor
+streamlit run deploy/dashboard.py      # dashboard duyệt đề xuất, Ctrl+C để tắt</code></pre>
+<div class="tbl"><table>
+<tr><th>Vai trò</th><th>Bài tập</th><th>Đáp số</th></tr>
+<tr><td>TN, VT2</td><td>Chạy <code>data_quality.py</code>, viết hướng xử lý cho từng WARN</td><td>15 PASS, 4 WARN, 0 FAIL</td></tr>
+<tr><td>VT2</td><td>Đổi ngưỡng z (3, 5, 8), vẽ precision–recall của cờ dự án</td><td>Ngưỡng 5: P 0,857, R 0,964</td></tr>
+<tr><td>VT1</td><td>Viết test chứng minh giá đồng tuần t chưa dùng được trước thứ Sáu tuần đó</td><td>Theo mẫu <code>test_external_as_of…</code></td></tr>
+<tr><td>VT3</td><td>Chạy luật kết hợp với <code>min_count</code> 10 và 50</td><td>Gốc (30): 19 cặp, precision 0,684</td></tr>
+<tr><td>VT4</td><td>Bỏ đặc trưng số tuần đến Tết, đo lại sai số ±2 tuần quanh Tết</td><td>Gốc: 0,599</td></tr>
+<tr><td>VT5</td><td>Chạy <code>run_pipeline.py dl</code>; thêm decoder LSTM sinh lần lượt 12 tuần và so với đầu ra trực tiếp</td><td>CNN 1D 0,766 / 0,756; không mạng nào qua G1</td></tr>
+<tr><td>VT6, TN</td><td>Chạy triển khai; tự tính lại lượng đặt 3 dòng lớn nhất của <code>order_proposal.csv</code>; giải thích cảnh báo ORDER_VALUE_SPIKE</td><td>184 dòng đề xuất; 4 cảnh báo WARN</td></tr>
+<tr><td>VT6</td><td>Đổi quy tắc chọn α thành "mục tiêu + 1 điểm"</td><td>α nhóm B của (d) thành 0,95</td></tr>
+</table></div>
+</section>
+
+<section class="chapter" id="appB">
+<h2><span class="num">Phụ lục B</span>Thuật ngữ Việt – Anh</h2>
+<div class="tbl"><table>
+<tr><th>Tiếng Việt</th><th>Tiếng Anh</th><th>Nghĩa trong sách</th></tr>
+<tr><td>Mốc cắt</td><td>Cutoff, forecast origin</td><td>Tuần cuối cùng có dữ liệu khi ra dự báo</td></tr>
+<tr><td>Backtest cuốn mốc</td><td>Rolling-origin evaluation</td><td>Đánh giá tại nhiều mốc cắt nối tiếp</td></tr>
+<tr><td>Rò rỉ dữ liệu</td><td>Data leakage, look-ahead bias</td><td>Dùng thông tin chưa biết tại mốc cắt</td></tr>
+<tr><td>Nhu cầu bị che</td><td>Censored demand</td><td>Lượng bán bị chặn bởi tồn kho</td></tr>
+<tr><td>Nhu cầu lẻ tẻ, gộp cục</td><td>Intermittent, lumpy demand</td><td>Phân loại SBC theo ADI và CV²</td></tr>
+<tr><td>Quantile, khoảng dự báo</td><td>Quantile, prediction interval</td><td>Giá trị mà nhu cầu không vượt với xác suất q</td></tr>
+<tr><td>Độ phủ</td><td>Coverage</td><td>Tỷ lệ thực tế nằm dưới quantile dự báo</td></tr>
+<tr><td>Hiệu chỉnh conformal</td><td>Conformal calibration, CQR</td><td>Sửa quantile bằng phần dư trên tập hiệu chỉnh</td></tr>
+<tr><td>Cửa sổ bảo vệ</td><td>Protection interval</td><td>Khoảng thời gian mức S phải phủ</td></tr>
+<tr><td>Mức phục vụ theo chu kỳ</td><td>Cycle service level</td><td>Tỷ lệ tuần không hết hàng</td></tr>
+<tr><td>Dừng sớm</td><td>Early stopping</td><td>Ngừng huấn luyện khi validation loss không còn giảm</td></tr>
+<tr><td>Đóng băng lớp, tinh chỉnh</td><td>Freeze, fine-tune</td><td>Giữ nguyên trọng số encoder, chỉ học lại lớp cuối</td></tr>
+<tr><td>Mô hình nền tảng</td><td>Foundation model, zero-shot</td><td>Mô hình huấn luyện trước trên nhiều chuỗi, dùng không cần huấn luyện thêm</td></tr>
+<tr><td>Cổng chất lượng</td><td>Quality gate</td><td>Tiêu chí nghiệm thu viết trước</td></tr>
+<tr><td>Hợp đồng dữ liệu</td><td>Data contract</td><td>Cấu trúc và miền giá trị bắt buộc của bảng</td></tr>
+</table></div>
+</section>
+
+<section class="chapter" id="refs">
+<h2><span class="num">Phụ lục C</span>Tài liệu tham khảo</h2>
+<ol class="refs">
+<li>Tan, P.-N., Steinbach, M., Kumar, V. <em>Introduction to Data Mining</em>. Pearson.</li>
+<li>Chapman, P. et al. (2000). <em>CRISP-DM 1.0: Step-by-step data mining guide</em>.</li>
+<li>Hyndman, R. J., Athanasopoulos, G. <em>Forecasting: Principles and Practice</em> (3rd ed.). OTexts.</li>
+<li>Hyndman, R. J., Koehler, A. B. (2006). Another look at measures of forecast accuracy. <em>International Journal of Forecasting</em>, 22(4).</li>
+<li>Croston, J. D. (1972). Forecasting and stock control for intermittent demands. <em>Operational Research Quarterly</em>, 23(3).</li>
+<li>Syntetos, A. A., Boylan, J. E., Croston, J. D. (2005). On the categorization of demand patterns. <em>Journal of the Operational Research Society</em>, 56(5).</li>
+<li>Teunter, R. H., Syntetos, A. A., Babai, M. Z. (2011). Intermittent demand: Linking forecasting to inventory obsolescence. <em>European Journal of Operational Research</em>, 214(3).</li>
+<li>Makridakis, S., Spiliotis, E., Assimakopoulos, V. (2022). M5 accuracy competition: Results, findings, and conclusions. <em>International Journal of Forecasting</em>, 38(4).</li>
+<li>Ke, G. et al. (2017). LightGBM: A highly efficient gradient boosting decision tree. <em>NeurIPS</em>.</li>
+<li>Romano, Y., Patterson, E., Candès, E. (2019). Conformalized quantile regression. <em>NeurIPS</em>.</li>
+<li>Hochreiter, S., Schmidhuber, J. (1997). Long short-term memory. <em>Neural Computation</em>, 9(8).</li>
+<li>Chollet, F. (2018). <em>Deep Learning with Python</em>. Manning.</li>
+<li>Ansari, A. F. et al. (2024). Chronos: Learning the language of time series. <em>Transactions on Machine Learning Research</em>.</li>
+<li>Silver, E. A., Pyke, D. F., Thomas, D. J. <em>Inventory and Production Management in Supply Chains</em> (4th ed.). CRC Press.</li>
+</ol>
+<p class="foot">Mọi con số trong sách đến từ dữ liệu giả lập của lab; chúng minh họa phương pháp và cho đáp số để tự kiểm tra, không phải kết quả của doanh nghiệp thật. Code trong sách được chèn tự động từ mã nguồn bởi <code>src/build_ebook.py</code>.</p>
+</section>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+  try { if (window.hljs) { document.querySelectorAll("pre code.language-python").forEach(function (el) { hljs.highlightElement(el); }); } } catch (e) {}
+  try { if (window.matchMedia("(max-width: 1099px)").matches) { document.querySelector("nav.toc details").open = false; } } catch (e) {}
+</script>
